@@ -4416,7 +4416,8 @@ PROFIL_GORUS_BUTCE = 60.0
 PROFIL_GORUS_DEVAM_BUTCE = 150.0    # yalniz kalanlar sorulurken
 PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "celiski", "duzeltme", "cozum",
                         "satir")
-_GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*(.+?)\s*$")
+# Satir basinda madde imi / kalin yazi olabilir: "- 2|...", "* 2|...", "**2**|...".
+_GORUS_SATIR = re.compile(r"^[\s\-•*>#]*(?:no\s*=\s*)?(\d+)\**\s*[|:=]\s*(.+?)\s*$")
 PROFIL_GEREKCE_EN_FAZLA = 600       # karakter
 
 
@@ -4458,11 +4459,18 @@ def _gorus_kaydi_coz(govde, devam, secenekler, secenek_ad=None):
     satirlari gerekceye eklenir ("no|secim" + alt satirlarda gerekce)."""
     devam = [d for d in devam if d]
     tam = (govde + " " + " ".join(devam)).strip() if devam else str(govde).strip()
-    secim, gerekce = _gorus_satir_ayir(tam, secenekler, secenek_ad)
-    if secim is None and devam:
-        secim, gerekce = _gorus_satir_ayir(govde, secenekler, secenek_ad)
-        if secim is not None and len(gerekce.split()) < 3:
+    # ONCE GOVDE TEK BASINA: numarali satir kendi basina tam bir kayitsa
+    # ("no|gerekce|secim") karar odur; alt satirlar yalniz gerekce eksikse
+    # gerekceye eklenir. Onceden once govde + devam birlikte okunuyordu:
+    # alt satirda baska bir kayit ya da secenek adiyla biten bir cumle varsa
+    # bu kararin SECIMI onunla degisiyordu.
+    secim, gerekce = _gorus_satir_ayir(govde, secenekler, secenek_ad)
+    if secim is not None:
+        if devam and len(gerekce.split()) < 3:
             gerekce = (gerekce + " " + " ".join(devam)).strip()
+        return secim, gerekce, tam
+    if devam:
+        secim, gerekce = _gorus_satir_ayir(tam, secenekler, secenek_ad)
     return secim, gerekce, tam
 
 
@@ -4495,6 +4503,12 @@ def _profil_gorus_coz(ham, parca):
             if m and m.group(1) not in aday and 1 <= int(m.group(1)) <= len(parca):
                 son = m.group(1)
                 aday[son] = [m.group(2), []]
+            elif m and "|" in m.group(2):
+                # Kayit bicimli ("no|...|...") ama numarasi YINELENMIS ya da
+                # parcanin DISINDA: gecersiz kayit. Onceki karara eklenmez
+                # (eklenirse onun secimini degistirirdi); ardindan gelen
+                # numarasiz satirlar da atilir. Ilk yazilan karar gecerlidir.
+                son = None
             elif son is not None:
                 aday[son][1].append(t.lstrip("-•* ").strip())
     sonuc = {}

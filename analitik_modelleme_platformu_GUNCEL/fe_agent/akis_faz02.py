@@ -1151,6 +1151,25 @@ def _profil_karari_kur(p):
     return karar
 
 
+def _ciftleri_buda(ek, haric):
+    """Birbiriyle celisen kolon ciftlerinin bulgularini (CELISKI_KONTROLLERI:
+    kisa sure uzun sureden buyuk, adet ile tutar tutmuyor) KALAN kolonlarla
+    yeniden kurar (ikinci asamaya girerken): esi birinci asamada cikan
+    bulgu duser. Yoksa kolon, artik tabloda olmayan bir kolonla celistigi
+    icin sorulur; dil modeli "Çıkar" derse iki kolon da kaybolurdu. Kaynak:
+    ilk budamada saklanan ek["cift_ham"] (geri donulup birinci asamanin
+    kararlari degisirse bulgular geri gelir)."""
+    if not isinstance(ek, dict):
+        return
+    ham = ek.get("cift_ham")
+    if not isinstance(ham, dict):
+        ham = ek["cift_ham"] = {a: list(ek.get(a) or []) for a in CELISKI_KONTROLLERI}
+    haric = set(haric or ())
+    for a in CELISKI_KONTROLLERI:
+        ek[a] = [x for x in ham.get(a) or []
+                 if x.get("kolon") not in haric and x.get("karsi") not in haric]
+
+
 def _gruplari_buda(p, ek, haric):
     """Birbirinin aynisi kolon gruplarini KALAN kolonlarla yeniden kurar
     (ucuncu asamaya girerken): onceki asamalarda cikan uyeler gruptan duser,
@@ -1196,6 +1215,7 @@ def profil_asamaya_gir(durum, no, butce=None, sorma=False):
     no = max(1, min(ASAMA_SAYISI, int(no)))
     p["asama"] = no
     durum["profil"] = p
+    _ciftleri_buda(ek, asama_cikanlari(durum, 1) if no >= 2 else ())
     if no >= 3:
         _gruplari_buda(p, ek, asama_cikanlari(durum, 2))
     _karar_asamasi(durum, p, ek, teshis, butce=butce, sorma=sorma, asama=no)
@@ -1214,6 +1234,9 @@ def profil_asama_kaydet(durum, govde, onay=True):
     govde = govde if isinstance(govde, dict) else {}
     ak = dict(p.get("asama_karar") or {}) if isinstance(p.get("asama_karar"), dict) else {}
     mevcut = asama_karar_degerleri(durum, no)
+    _iz = lambda: json.dumps([asama_karar_degerleri(durum, no), p.get("ayni_secim"), p.get("cozum_secim"),
+                              p.get("duzeltme_secim"), p.get("satir_secim")], sort_keys=True, default=str)
+    onceki_iz = _iz()
     if isinstance(govde.get("cikar"), list):
         cik = {str(k) for k in govde["cikar"]}
         ak[str(no)] = {k: (PROFIL_KARAR_CIKAR if k in cik else PROFIL_KARAR_TUT) for k in mevcut}
@@ -1256,6 +1279,14 @@ def profil_asama_kaydet(durum, govde, onay=True):
         except (TypeError, ValueError):
             eski = []
         p["asama_onay"] = sorted({x for x in eski if x < no} | {no})
+    elif _iz() != onceki_iz:
+        # ONAYSIZ KAYIT ("Önceki Aşama") secimleri DEGISTIRDIYSE bu asama ve
+        # sonrakiler artik onayli sayilmaz: onaylanan sey degisti. Yoksa
+        # onaylanmamis secim, defterde ve seritte onaylanmis gorunurdu.
+        try:
+            p["asama_onay"] = sorted({int(x) for x in (p.get("asama_onay") or []) if int(x) < no})
+        except (TypeError, ValueError):
+            p["asama_onay"] = []
     durum["profil"] = p
     return no
 
@@ -1351,6 +1382,8 @@ def asama_karar_kayitlari(durum):
     ad_ = lambda kod: kc.COZUM_ADI.get(kod, {"tut": "Tut", "cikar": "Çıkar", "birak": "Olduğu gibi bırak"}.get(kod, kod))
     cikan, kararlar = {}, {}
 
+    kural_onerisi = {}          # id(kayit) -> o kuralin KENDI onerisi (tut / cikar)
+
     def yaz(no, kolon, kural, karar, veren, gerekce, o=None, cikti=False):
         o = o if isinstance(o, dict) else {}
         kayit = {"asama": no, "asama_adi": asama_adi.get(no, ""), "kural": kad.get(kural, kural),
@@ -1359,6 +1392,7 @@ def asama_karar_kayitlari(durum):
             kayit["kod_onerisi"] = ad_(o["kod_oneri"])
             kayit["kod_gerekcesi"] = str(o.get("kod_gerekce") or "")
         kararlar.setdefault(str(kolon), []).append(kayit)
+        kural_onerisi[id(kayit)] = o.get("oneri")
         if cikti:
             cikan.setdefault(str(kolon), kayit)
 
@@ -1381,9 +1415,12 @@ def asama_karar_kayitlari(durum):
                     (o.get("kod_gerekce") or o.get("gerekce")) if veren == "kod" else "Kullanıcı seçimi.", o)
         for k, v in deger.items():
             if v == PROFIL_KARAR_CIKAR and k not in cikan and kararlar.get(k):
-                # Kolonu cikaran kural: bu asamada Çıkar onerilen ilk kural, yoksa ilki.
+                # Kolonu cikaran kural: bu asamada KENDI onerisi Çıkar olan ilk
+                # kural (kolon birden cok kuraldaysa her kayit kolonun kararini
+                # tasir; "karari Çıkar olan ilk kayit" ilk kural olurdu), yoksa ilki.
                 bu = [r for r in kararlar[k] if r["asama"] == no]
-                cikan[k] = next((r for r in bu if r["karar"] == "Çıkar"), bu[0] if bu else kararlar[k][-1])
+                cikan[k] = next((r for r in bu if kural_onerisi.get(id(r)) == PROFIL_KARAR_CIKAR),
+                                bu[0] if bu else kararlar[k][-1])
     if 1 in onayli:
         for k in t.get("sabit") or []:
             yaz(1, k, "sabit", "Üretime girmez", "kural", "Her satırda aynı değer var; satırları ayırt etmez.", cikti=True)
@@ -1720,16 +1757,29 @@ def _dm_gerekce(g):
     return DM_GEREKCE_YOK + ((" Yanıtında yalnız şunu yazdı: «%s»." % ham[:200]) if ham else "")
 
 
-def _gorusu_karara_yaz(p, ek):
+def _gorusu_karara_yaz(p, ek, asama=None):
     """Dil modelinin kararini ONERI yapar (secili gelen odur): Tut / Çıkar
     ve duzeltmelerde p["llm_oneri"], cozumlerde p["cozum_oneri"], ayni
     kolon gruplarinda grubun sirasi. Kodun onerisi ve gerekcesi "kod_oneri"
     / "kod_gerekce" olarak kalir. Karar alinamayan bulguya dokunulmaz (kodun
-    onerisi gecerli)."""
+    onerisi gecerli).
+    asama: yalniz o asamanin kurallari yazilir. Oteki asamalarin
+    p["llm_gorus"] kayitlari onceki profilden tasinmis ve henuz
+    DOGRULANMAMIS olabilir (bulgusu degismis karar); onlar kendi asamalari
+    acilirken dogrulanip yazilir. Acik asamada karari artik gecerli olmayan
+    (silinen) bulgunun eski "dil modeli" onerisi de kaldirilir: kodun
+    onerisi yeniden gecerli olur."""
     G = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
     lo = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
     p["llm_oneri"] = lo
+    bu = None if asama is None else set(asama_kurallari(asama))
     for a in KARAR_KONTROLLERI + DUZELTME_KONTROLLERI:
+        if bu is not None and a not in bu:
+            continue
+        for k in [k for k, o in (lo.get(a) or {}).items()
+                  if isinstance(o, dict) and o.get("kaynak") == "dil modeli"
+                  and not ((G.get(a) or {}).get(k) or {}).get("secim")]:
+            del lo[a][k]
         for k, g in (G.get(a) or {}).items():
             if not g.get("secim"):
                 continue
@@ -1783,14 +1833,14 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False, asama=None):
     _celiski_cift_denetimi(p, ek, _aciklamalar(durum))
     # KARARI DIL MODELI VERIR: secili gelen oneri onun karari olur; kodun
     # onerisi ve gerekcesi yaninda kalir.
-    _gorusu_karara_yaz(p, ek)
+    _gorusu_karara_yaz(p, ek, asama)
     # Bu turda alinan Tut / Çıkar kararlari bir grubun adaylarini degistirdiyse
     # (kodun Çıkar dedigi kolona dil modeli Tut dedi: kolon artik aday) o
     # gruplar ayni istekte, kalan sureyle sorulur; sayim da guncellenir.
     if _grup_elenen_guncelle(p, ek):
         kalan = None if butce is None else max(5.0, float(butce) - (_time.time() - basla))
         p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=kalan, sorma=sorma, asama=asama)
-        _gorusu_karara_yaz(p, ek)
+        _gorusu_karara_yaz(p, ek, asama)
 
 
 def _celiski_cift_denetimi(p, ek, aciklama):
@@ -1925,9 +1975,14 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
     p = durum.get("profil") or {}
     oneri = duzeltme_onerileri(durum)
     bilgi_hepsi, yeni = {}, []
+    # ASAMALI DUZEN: ilk uc asamada CIKAN kolona duzeltme ogrenilmez. O kolon
+    # dorduncu asamada (Duzeltmeler) gosterilmez, kullanici secim yapamaz;
+    # ogrenilirse onerilen duzeltme sessizce uygulanir ve kolonun bayrak
+    # kolonu (ornegin KOLON_KOD) kolon ciktigi halde son tabloya girerdi.
+    cikan = asama_cikanlari(durum, 3) if profil_asamali(p) else set()
     for a, kolonlar in duzeltme_secimi(durum).items():
         for k, c in kolonlar.items():
-            if c == "birak" or k not in df.columns:
+            if c == "birak" or k not in df.columns or k in cikan:
                 continue
             b = kc.duzeltme_ogren(a, c, df[k], tr, (oneri[a][k] or {}).get("kayit"))
             kol = []
