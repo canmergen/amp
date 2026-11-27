@@ -17694,6 +17694,11 @@ function profilKartiEkle(alan, blok, devamdan) {
     let asamayaGit = null;
     const seritHata = elYap("div", "pf-serit-hata");
     seritHata.hidden = true;
+    /* ONAYLANMIŞ KARTTA GEZİNME (asamaNo 0, karar beklenmiyor): şeritteki
+       bir kontrole basınca yalnız o kontrolün kural grupları görünür
+       (gorunum = kontrol no; 0 = hepsi). Hiçbir şey değişmez, sunucuya
+       istek gitmez: adım geri alınmadan neyin onaylandığına bakılır. */
+    let gorunum = 0, seritBitti = false, gorunumSec = null;
     /* Şerit ve aşama bilgisi kartın başında DEĞİL, tablonun genelinden
        (karolar, türler, eksik değer oranına göre kolonlar) sonra, hemen
        «Kontroller» bölümünün üstünde durur: aşamalar kontrollerin
@@ -17711,16 +17716,34 @@ function profilKartiEkle(alan, blok, devamdan) {
            kontrolde sayı yoktur (önceki kararlara bağlı). Önceden bu bilgi
            şeridin altında uzun bir paragraftı. */
         const kolonToplam = Number(asama.kolon_toplam || 0);
+        const gezinir = !kararModu && asamaNo === 0;
         seritCiz = bitti => {
+            seritBitti = bitti;
             serit.textContent = "";
             (asama.adlar || []).forEach(x => {
                 const sonOnayli = bitti && asamaSon && Number(x.no) === asamaNo;
                 const acik = Number(x.no) === asamaNo && !sonOnayli;
                 const onayli = !!x.onayli || sonOnayli;
-                const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (onayli ? " onayli" : ""));
+                const bakilan = gezinir && gorunum === Number(x.no);
+                const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (onayli ? " onayli" : "")
+                    + (bakilan ? " bakilan" : ""));
                 oge.setAttribute("role", "listitem");
                 if (acik) oge.setAttribute("aria-current", "step");
                 if (x.aciklama) oge.title = x.aciklama;
+                if (gezinir) {
+                    oge.classList.add("tikla");
+                    oge.tabIndex = 0;
+                    oge.title = (x.aciklama ? x.aciklama + " " : "") + (bakilan
+                        ? "Bütün kontrolleri göstermek için yeniden basın."
+                        : "Yalnız bu kontrolün kurallarını görmek için basın.");
+                    oge.setAttribute("aria-pressed", bakilan ? "true" : "false");
+                    oge.onclick = () => { if (gorunumSec) gorunumSec(bakilan ? 0 : Number(x.no)); };
+                    oge.onkeydown = e => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        oge.onclick();
+                    };
+                }
                 if (kararModu && x.git && !bitti) {
                     oge.classList.add("tikla");
                     oge.tabIndex = 0;
@@ -17738,7 +17761,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                 const yazi = elYap("span", "pf-asama-yazi");
                 yazi.appendChild(elYap("span", "pf-asama-etiket", "Kontrol " + x.no));
                 yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
-                yazi.appendChild(elYap("span", "pf-asama-durum", acik ? "Şu an buradasınız" : onayli ? "Onaylandı" : "Sırada"));
+                yazi.appendChild(elYap("span", "pf-asama-durum", bakilan ? "Onaylandı · gösteriliyor"
+                    : acik ? "Şu an buradasınız" : onayli ? "Onaylandı" : "Sırada"));
                 ust.appendChild(yazi);
                 oge.appendChild(ust);
                 /* Sayılar ve çubuk. Son aşama yerinde onaylandıysa (sonOnayli)
@@ -19012,8 +19036,10 @@ function profilKartiEkle(alan, blok, devamdan) {
         /* Süzgeç için: kod ile dil modeli bu kontrolde ayrışıyor mu. */
         if (say.fark) farkAcicilar.push(() => ac(true));
         else { satir.classList.add("pf-farksiz"); detay.classList.add("pf-farksiz"); }
+        satir.dataset.asama = detay.dataset.asama = String(k.asama_no || "");
         (kesimSatir[kesim] = kesimSatir[kesim] || []).push([satir, detay]);
     });
+    const kesimKayit = [];     // [kesim başlık satırı, [[satır, ayrıntı], …]]: kontrol görünümü için
     KESIMLER.forEach(([a, ad, not]) => {
         const liste = kesimSatir[a] || [];
         if (!liste.length) return;
@@ -19027,11 +19053,52 @@ function profilKartiEkle(alan, blok, devamdan) {
         ks.appendChild(ktd);
         tbody.appendChild(ks);
         liste.forEach(([s, d]) => { tbody.appendChild(s); tbody.appendChild(d); });
+        kesimKayit.push([ks, liste, ktd.querySelector(".pf-kesim-sayi")]);
     });
     tablo.appendChild(tbody);
     const tsar = elYap("div", "pf-tablo-sar");
     tsar.appendChild(tablo);
     kb.appendChild(tsar);
+    /* Onaylanmış kartta kontrol kontrol gezinme: şeridin altında «‹ Önceki»,
+       «Bütün Kontroller», «Sonraki ›». Seçilen kontrolün dışındaki kural
+       grupları ve boş kalan kesim başlıkları gizlenir. */
+    if (asama && !kararModu && asamaNo === 0 && (asama.adlar || []).length) {
+        const gez = elYap("div", "pf-gezinti");
+        const dgm = (yazi, sinif) => { const b = elYap("button", "dg-toplu-btn pf-gezinti-btn " + sinif, yazi); b.type = "button"; gez.appendChild(b); return b; };
+        const onceki = dgm("‹ Önceki", "pf-gezinti-onceki");
+        const hepsi = dgm("Bütün Kontroller", "pf-gezinti-hepsi");
+        const sonraki = dgm("Sonraki ›", "pf-gezinti-sonraki");
+        const etiket = elYap("span", "pf-gezinti-etiket", "");
+        gez.appendChild(etiket);
+        const sonNo = Number(asama.toplam || (asama.adlar || []).length);
+        gorunumSec = no => {
+            gorunum = Math.max(0, Math.min(sonNo, Number(no) || 0));
+            kesimKayit.forEach(([ks, liste, sayiEl]) => {
+                let gorunen = 0;
+                liste.forEach(([s, d]) => {
+                    const dis = !!gorunum && Number(s.dataset.asama) !== gorunum;
+                    s.classList.toggle("pf-asama-disi", dis);
+                    d.classList.toggle("pf-asama-disi", dis);
+                    if (!dis) gorunen++;
+                });
+                ks.classList.toggle("pf-asama-disi", !gorunen);
+                if (sayiEl) sayiEl.textContent = ftBinlik(gorunen) + " kural grubu";
+            });
+            kart.classList.toggle("pf-kontrol-gorunumu", !!gorunum);
+            const x = (asama.adlar || []).find(a => Number(a.no) === gorunum);
+            etiket.textContent = x ? "Kontrol " + x.no + ": " + x.ad : "Bütün kontrollerin kuralları";
+            onceki.disabled = gorunum <= 1;
+            sonraki.disabled = gorunum >= sonNo;
+            hepsi.classList.toggle("secili", !gorunum);
+            hepsi.setAttribute("aria-pressed", gorunum ? "false" : "true");
+            seritCiz(seritBitti);
+        };
+        onceki.onclick = () => gorunumSec(gorunum - 1);
+        sonraki.onclick = () => gorunumSec(gorunum + 1);
+        hepsi.onclick = () => gorunumSec(0);
+        asamaUst.push(gez);
+        gorunumSec(0);
+    }
     asamaUst.forEach(x => analiz.appendChild(x));
     analiz.appendChild(kb);
 
@@ -19237,7 +19304,16 @@ function profilKartiEkle(alan, blok, devamdan) {
 
     if (alan.kayit) kart.appendChild(elYap("div", "pf-kayit", "Profil tablosu: " + alan.kayit));
 
-    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+    const kap = adimKabiAl(blok) || sohbetEl;
+    /* Adım onaylanınca son kontrolün kartı yerinde kilitlenir; ardından
+       biten adımın TAM kartı (bütün kontroller, gezinilebilir) gelir. İkisi
+       üst üste durmasın: tam kart gelince kilitli kontrol kartı kaldırılır. */
+    if (asama) kart.dataset.asamaKart = String(asamaNo);
+    if (asama && !kararModu && asamaNo === 0)
+        kap.querySelectorAll(".pf-kart.kilitli").forEach(e => {
+            if (e.dataset.asamaKart && e.dataset.asamaKart !== "0") e.remove();
+        });
+    kap.appendChild(kart);
     kartHazir.forEach(f => f());
     return kart;
 }

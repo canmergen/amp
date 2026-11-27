@@ -5364,6 +5364,18 @@ def profil_ek_deger(v):
     return _pe.deger_metni(v)
 
 
+def _asama_no_yaz(satirlar):
+    """Kartin kural grubu satirlarina hangi kontrole (asamaya) ait oldugunu
+    yazar ("asama_no"): onaylanmis kartta seritteki kontrole basinca yalniz
+    o kontrolun kurallari gosterilir. Birlesik satirin uyeleri hep ayni
+    asamadadir; genel satir (Tesadüf Olasılığı) birinci asamadadir."""
+    kn = _kural_asamasi()
+    for k in satirlar:
+        uy = k.get("uye_kontroller") or []
+        k["asama_no"] = int(kn.get((uy[0] if uy else k).get("anahtar"), 1))
+    return satirlar
+
+
 def _asama_onayini_dusur(durum, no):
     """no. asamanin ve sonrakilerin onayini dusurur (geriye gidildi: acilan
     kontrol ve sonrakiler yeniden onaylanir). Kayitli secimlere dokunmaz;
@@ -5673,8 +5685,8 @@ def profil_karti(durum, karar=False):
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
-        "kontroller": (_genel_kontrol_satirlari(esik) if acik_asama in (None, 1) else [])
-        + kontrolleri_grupla(kontroller),
+        "kontroller": _asama_no_yaz((_genel_kontrol_satirlari(esik) if acik_asama in (None, 1) else [])
+                                    + kontrolleri_grupla(kontroller)),
         # Asamali duzen: acik asama, adlari, onaylananlar, asamaya giren kolon.
         "asama": ({"no": acik_asama or 0, "toplam": ASAMA_SAYISI,
                    "ad": PROFIL_ASAMALARI[acik_asama - 1]["ad"] if acik_asama else "",

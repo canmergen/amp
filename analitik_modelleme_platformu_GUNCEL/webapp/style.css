@@ -6329,6 +6329,13 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .pf-asama-oge.tikla:hover { border-color: var(--metin); background: var(--yuzey); box-shadow: 0 1px 4px rgba(0,0,0,.10); }
 .pf-asama-oge.tikla:focus-visible { outline: 2px solid var(--metin); outline-offset: 1px; }
 .pf-kart.pf-asama-geciyor .pf-asama-oge.tikla, .pf-kart.pf-karar-aliyor .pf-asama-oge.tikla { pointer-events: none; opacity: 0.6; }
+/* Onaylanmış kartta kontrol kontrol gezinme. */
+.pf-asama-oge.bakilan { border: 2px solid var(--metin); background: var(--yuzey); }
+.pf-kart .pf-asama-disi { display: none !important; }
+.pf-gezinti { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--b-2) var(--b-3); }
+.pf-gezinti-btn.secili { border-color: var(--metin); font-weight: var(--fw-kalin); }
+.pf-gezinti-btn:disabled { opacity: 0.45; cursor: default; }
+.pf-gezinti-etiket { font-weight: var(--fw-kalin); }
 .pf-serit-hata { color: var(--kirmizi); font-weight: var(--fw-kalin); text-align: center; }
 .pf-serit-hata[hidden] { display: none; }
 .pf-asama-ust { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
