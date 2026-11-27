@@ -427,7 +427,7 @@ def _gun_ozeti(gun):
 # ===========================================================================
 # 02.1 DUZELTMELER: Gizli Eksik, Beklenmeyen Negatif, Uc Deger. Kolon
 # uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
-# seti degismez). Gizli eksikte istenirse <KOL>_BILGI_YOK bayragi uretilir.
+# seti degismez). Gizli eksikte istenirse <KOL>_FLAG bayragi uretilir.
 # ===========================================================================
 # Sifir Yogunlugu ve Ondalik Hassasiyeti kaldirildi: veri hatasi gostermiyor,
 # modeli degistirmiyordu (eski kayittaki sonuc ve secimleri yok sayilir).
@@ -883,7 +883,7 @@ def _veri_onerileri(durum, ek, df, egitim):
                     "olurdu." % (x.get("deger"), _sb(x["set"], _tt)))
                 continue
             yaz(a_, x["kolon"], "kod_bos_bayrak", "%s «bilgi yok» anlamında yazılmış: boş "
-                "sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_BILGI_YOK) saklanır."
+                "sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_FLAG) saklanır."
                 % x.get("deger"))
     return cikti
 
@@ -1964,9 +1964,9 @@ def kod_karti(kod_oneri, kod_gerekce, oneri, secenek_adi=None):
 KOD_DUZELTMELERI = ("gizli_eksik", "karisik_eksik")
 KOD_KURAL_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak"}
 KOD_KURAL_GEREKCESI = {
-    "gizli_eksik": "Kod boş sayılır; kodun olduğu satırlar _BILGI_YOK bayrağında kalır, bilgi kaybolmaz.",
+    "gizli_eksik": "Kod boş sayılır; kodun olduğu satırlar _FLAG bayrağında kalır, bilgi kaybolmaz.",
     "karisik_eksik": "Eksik bilgi iki biçimde yazılmış; kod boş sayılır, kodun olduğu satırlar "
-                     "_BILGI_YOK bayrağında kalır (kod ile boşun farkı bilgi taşıyorsa kaybolmaz).",
+                     "_FLAG bayrağında kalır (kod ile boşun farkı bilgi taşıyorsa kaybolmaz).",
 }
 
 
@@ -1997,7 +1997,7 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
     # ASAMALI DUZEN: ilk uc asamada CIKAN kolona duzeltme ogrenilmez. O kolon
     # dorduncu asamada (Duzeltmeler) gosterilmez, kullanici secim yapamaz;
     # ogrenilirse onerilen duzeltme sessizce uygulanir ve kolonun bayrak
-    # kolonu (ornegin KOLON_BILGI_YOK) kolon ciktigi halde son tabloya girerdi.
+    # kolonu (ornegin KOLON_FLAG) kolon ciktigi halde son tabloya girerdi.
     cikan = asama_cikanlari(durum, 3) if profil_asamali(p) else set()
     for a, kolonlar in duzeltme_secimi(durum).items():
         for k, c in kolonlar.items():
@@ -2304,7 +2304,7 @@ def _satir_duzeltme(durum, kontrol, ad):
 
 # ===========================================================================
 # 02.1 YENI KOLONLARIN SOZLUK SATIRLARI: cozum kolonlari (gruplama, dolu
-# bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_BILGI_YOK,
+# bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_FLAG,
 # _BOS) UPDT sozluge eklenir. Satirlar 02.1 onayinda UPDT veri yazilirken
 # kurulur (bos orani yazilan tablodan, kesin); p["sozluk_ek"].
 # ===========================================================================
@@ -2824,7 +2824,7 @@ def _ac(kisa, nedir, ornek, yakala, neden_etiket=None, neden=None, kapsam=None, 
 
 
 _VERIDEN = "Önerilen nereden?"
-_KOD_SAKLA = ("bu sayı boş sayılır; hangi satırlarda yazdığı da ayrı bir 1/0 kolonunda (_BILGI_YOK) "
+_KOD_SAKLA = ("bu sayı boş sayılır; hangi satırlarda yazdığı da ayrı bir 1/0 kolonunda (_FLAG) "
               "saklanır")
 PROFIL_ESIK_ACIKLAMA = {
     "cok_bos": _ac(
@@ -4734,7 +4734,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Tarih yerine 01.01.1900 ya da 31.12.9999 gibi uydurma tarih yazılmış.",
         "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan tarih arar.",
         "Bitiş tarihi olmayan kayıtlarda 31.12.9999.",
-        "öneri: bu tarihler boş sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_BILGI_YOK) "
+        "öneri: bu tarihler boş sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_FLAG) "
         "saklanır.",
         sorun="Bu tarihler gerçek değil, «bilgi yok» ya da «süresiz» demek için yazılmıştır; "
               "gerçek tarih gibi hesaba girerse sonucu bozar."),
