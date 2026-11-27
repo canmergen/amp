@@ -17682,22 +17682,33 @@ function profilKartiEkle(alan, blok, devamdan) {
     const asama = (alan.asama && Number(alan.asama.toplam) > 0) ? alan.asama : null;
     const asamaNo = asama ? Number(asama.no || 0) : 0;
     const asamaSon = !!asama && asamaNo === Number(asama.toplam);
+    /* Şerit. "bitti": SON aşamanın kartı onaylandı (adımın onay düğmesine
+       basıldı ya da kart geçmişten kilitli çizildi); o zaman son aşama da
+       «Onaylandı» görünür. Önceden kart yerinde kilitlenirken şerit yeniden
+       çizilmiyor, son aşama «Şu an buradasınız» diye kalıyordu. */
+    let seritCiz = () => {};
     if (asama) {
         const serit = elYap("div", "pf-asamalar");
         serit.setAttribute("role", "list");
         serit.setAttribute("aria-label", "Aşamalar");
-        (asama.adlar || []).forEach(x => {
-            const acik = Number(x.no) === asamaNo;
-            const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (x.onayli ? " onayli" : ""));
-            oge.setAttribute("role", "listitem");
-            if (acik) oge.setAttribute("aria-current", "step");
-            oge.appendChild(elYap("span", "pf-asama-no", x.onayli && !acik ? "✓" : String(x.no)));
-            const yazi = elYap("span", "pf-asama-yazi");
-            yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
-            yazi.appendChild(elYap("span", "pf-asama-durum", acik ? "Şu an buradasınız" : x.onayli ? "Onaylandı" : "Sırada"));
-            oge.appendChild(yazi);
-            serit.appendChild(oge);
-        });
+        seritCiz = bitti => {
+            serit.textContent = "";
+            (asama.adlar || []).forEach(x => {
+                const sonOnayli = bitti && asamaSon && Number(x.no) === asamaNo;
+                const acik = Number(x.no) === asamaNo && !sonOnayli;
+                const onayli = !!x.onayli || sonOnayli;
+                const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (onayli ? " onayli" : ""));
+                oge.setAttribute("role", "listitem");
+                if (acik) oge.setAttribute("aria-current", "step");
+                oge.appendChild(elYap("span", "pf-asama-no", onayli && !acik ? "✓" : String(x.no)));
+                const yazi = elYap("span", "pf-asama-yazi");
+                yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
+                yazi.appendChild(elYap("span", "pf-asama-durum", acik ? "Şu an buradasınız" : onayli ? "Onaylandı" : "Sırada"));
+                oge.appendChild(yazi);
+                serit.appendChild(oge);
+            });
+        };
+        seritCiz(!!(blok && blok.kilit));
         kart.appendChild(serit);
         if (asamaNo) {
             const ab = elYap("div", "pf-asama-bilgi");
@@ -19043,11 +19054,13 @@ function profilKartiEkle(alan, blok, devamdan) {
             btn.hidden = true;
             btn.disabled = true;
             kararCiz();
+            seritCiz(true);                 // son aşama da «Onaylandı»
             geriAlKilit = () => {
                 kart.classList.remove("kilitli");
                 btn.hidden = false;
                 btn.disabled = false;
                 kararCiz();
+                seritCiz(false);
             };
             const gidler = Object.keys(ayniSecim);
             const ozet = [Object.keys(kararlar).length
