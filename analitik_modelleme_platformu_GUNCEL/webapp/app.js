@@ -21415,14 +21415,15 @@ function gelenekselKartiEkle(alan, blok) {
                         const s2 = elYap("div", "gl-ad-sayi");
                         s2.append(elYap("b", "", ftBinlik(x.kol)), elYap("span", "", " yeni kolon"));
                         kolTd.appendChild(s2);
+                        /* Rozetler ve yazılar iki sütunlu ızgarada alt alta hizalanır
+                           (satırlar ayrı ayrı ortalanınca rozetler kayıyordu). */
                         const sira = ["dm", "sohbet", "olcum", "kural", "siz"].filter(o_ => x.kim[o_]);
+                        const kap = elYap("div", "gl-ad-kim-kap");
                         sira.forEach(o_ => {
-                            const r = elYap("div", "gl-ad-kim");
-                            if (o_ === "dm" || o_ === "sohbet") r.appendChild(pfKayRozet("dm"));
-                            else if (o_ !== "siz") r.appendChild(pfKayRozet("kod"));
-                            r.appendChild(elYap("span", "", (o_ === "dm" ? "" : ONEREN_ADI[o_] + " ") + ftBinlik(x.kim[o_]) + " birim"));
-                            kimTd.appendChild(r);
+                            kap.appendChild(o_ === "dm" || o_ === "sohbet" ? pfKayRozet("dm") : o_ !== "siz" ? pfKayRozet("kod") : elYap("span", "pf-kay gl-ad-kim-siz", "Siz"));
+                            kap.appendChild(elYap("span", "gl-ad-kim-yazi", (o_ === "dm" || o_ === "siz" ? "" : ONEREN_ADI[o_] + " ") + ftBinlik(x.kim[o_]) + " birim"));
                         });
+                        kimTd.appendChild(kap);
                     } else {
                         kolTd.appendChild(elYap("span", "pf-ne pf-sonuc-sessiz", "Üretilmeyecek"));
                         kimTd.appendChild(elYap("span", "pf-sebep", x.one ? "Önerildi ama " + ftBinlik(x.one) + " birimin hepsinde çıkardınız."

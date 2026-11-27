@@ -6498,3 +6498,8 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .gl-ornek-kod { display: block; margin-top: 2px; padding: 4px 8px; border-radius: var(--r-kucuk); background: var(--yuzey); border: 1px solid var(--kenar);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--fs-ustbar); text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
 .gl-ornek .pf-ic-kap.gl-ornek-sar { max-height: none; overflow-x: auto; overflow-y: visible; }
+/* 02.2 «Kim Önerdi»: rozet ve yazı iki sütunda, alt alta hizalı. */
+.gl-ad-kim-kap { display: inline-grid; grid-template-columns: auto auto; align-items: center; gap: 4px 8px; text-align: left; }
+.gl-ad-kim-kap > .pf-kay { justify-self: stretch; text-align: center; min-width: 0; }
+.gl-ad-kim-siz { border: 1px solid var(--amber); color: var(--amber); background: var(--yuzey); }
+.gl-ad-kim-yazi { white-space: nowrap; }
