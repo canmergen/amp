@@ -303,9 +303,13 @@ def yazim_uygula(x, anahtar):
     return s.where(~m, s.astype(str).map(esle))
 
 
-# Yeni kolonun adi: <KOLON>_<EK>.
+# Yeni kolonun adi: <KOLON>_<EK>. Bayrak ekleri ne anlattigini soyler:
+# BILGI_YOK = kaynak kolonda "bilgi yok" anlaminda ozel deger (or. -1 ya da
+# uydurma tarih) yazan satirda 1. (Eski ek "KOD" idi: kimlik / kategori kodu
+# sanildigi icin degisti. Onaylanmis calismalarda kolon adlari kayitlidir;
+# eski adlar o calisma yeniden onaylanana kadar kalir.)
 COZUM_EKI = {"hedef_grupla": "GRP", "seyrek_grupla": "GRP", "onek_grupla": "ONEK_GRP",
-             "dolu_bayrak": "DOLU", "kod_bos_bayrak": "KOD", "tarih_bos_bayrak": "KOD",
+             "dolu_bayrak": "DOLU", "kod_bos_bayrak": "BILGI_YOK", "tarih_bos_bayrak": "BILGI_YOK",
              "metin_bos_bayrak": "BOS", "gun_farki": "GUN"}
 
 

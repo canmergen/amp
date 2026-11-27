@@ -2834,7 +2834,7 @@ tanıtır; sayfalar sol bardan açılır.
 - Şeritteki «giren → kalan» yalnız incelenen kolonları sayar. Düzeltme bayrakları (ör. «Kodu boş say ve bayrak üret» seçilen her kolon için bir 1 / 0 kolonu) ve çözüm kolonları (gün farkı, gruplama, dolu bayrağı, metinden özellik) bunların üstüne eklenir; şeritte görünmüyordu.
 - `akis_faz02.asama_yeni_kolonlari(durum, acik_asama)`: kontrol başına üretilen yeni kolon sayısı (karta `asama.yeni`, `asama.yeni_kesin`). Onaylanmış kartta öğrenilmiş kayıtlardan (`duzeltme_bilgi`, `cozum_bilgi`), kesin; karar sürerken seçimlerden. Düzeltme bayrakları kuralının kontrolüne (çoğu Kontrol 4), çözüm kolonları Kontrol 1'e yazılır (varsayım: çözümü olan kolonlar o kontrolün kurallarında yakalanır).
 - Kart: kontrol kutusunda «+N yeni kolon»; onaylanmış kartta şeridin altında «Son tablo: kalan + yeni = toplam» (rol kolonları ayrıca).
-- Bayrak kolonunun adı `<KOLON>_KOD` (`kolon_cozum.COZUM_EKI`): «kod» burada «bilgi yok» anlamında yazılmış özel değerdir (ör. -1); kolon o değerin yazdığı satırlarda 1'dir.
+- Bayrak kolonunun adı `<KOLON>_BILGI_YOK` (`kolon_cozum.COZUM_EKI`; eskiden `_KOD`): kaynak kolonda «bilgi yok» anlamında özel değer (ör. -1 ya da uydurma tarih) yazan satırda 1. Eski ek kimlik / kategori kodu sanıldığı için değişti. Onaylanmış çalışmada kolon adları kayıtlıdır: eski `_KOD` adları 02.1.2 yeniden onaylanana kadar kalır; yeniden onaylanınca sonraki adımlar (02.2 ölçümü dahil) yeni adlarla yeniden yapılır.
 
 **02.2: modelde ölçüm, kodun kararı ve dil modelinin kararı ayrı (ölçüm sürümü 4, öneri sürümü 3)**
 
