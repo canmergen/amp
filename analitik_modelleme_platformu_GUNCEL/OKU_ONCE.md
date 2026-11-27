@@ -3487,6 +3487,8 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 
 ## Değişken defteri (JSON)
 
+> **Sürüm 2 (aşağıda "Değişken defteri sürüm 2" bölümü):** üst anahtarlar `kalan` / `cikarilan` yerine `onaylanan` / `reddedilen` / `rol`; kayıtta `anlam` yerine `aciklama`; 02.1.2 aşamaları onaylandıkça `kararlar`. Bu bölümdeki kalıcı kayıt (`durum["defter"]`) ve 02.2 / 02.3 davranışı aynıdır.
+
 - **Dosya.** `PROJE_HAFIZASI/<çalışma>/degisken_defteri.json` (`fe_agent/degisken_defteri.py`). Baz veri profili oluştuğu andan itibaren HER ADIM SONUNDA yeniden yazılır (`akis_sohbet._tamamlandi_yaz` → `guncelle`; içerik değişmediyse yazılmaz).
 - **İçerik.**
   - `kalan`: o an veri setinde duran her değişken (ham + üretilen): `ad`, `eski_ad`, `rol`, `kaynak` (ham / cozum / kural / kesif), `anlam`, `ifade`, `kaynak_kolonlar`, `ozet`.
@@ -3719,3 +3721,19 @@ Sorun: kartta birçok satırda "Dil modeli bu karar için gerekçe yazmadı." ya
 - **Profil sürümü 14:** eski profil kendiliğinden yeniden çıkar.
 - **Sınır.** "Yazım farkı yüzünden çok çeşitli görünen" kolonun durumu dördüncü aşamadaki yazım seçimine bağlıdır (eski davranış aynen); birinci aşamada ayrıca sorulmaz. Canlıda gerçek dil modeliyle denenmedi.
 - **Test.** `asama_test.py` (27, arka uç), `asama_ui.js` (16), güncellenen `gerekce_test.py` (20), `gerekce_ui.js` (18).
+
+## Değişken defteri sürüm 2: onaylanan / reddedilen / rol
+
+Dosya aynı: `PROJE_HAFIZASI/<çalışma>/degisken_defteri.json` (`fe_agent/degisken_defteri.py`, `DEFTER_SURUMU = 2`). Veri seti profili (01.2.3.1) oluştuğu andan itibaren her adım sonunda ve 02.1.2'nin HER AŞAMASI onaylandıkça yeniden yazılır (`/profil_asama` → `guncelle`); içerik değişmediyse yazılmaz.
+
+- **Üst anahtarlar.**
+  - `onaylanan`: o an veri setinde duran değişkenler (ham ve üretilen).
+  - `reddedilen`: çıkarılan ham kolonlar ve üretilip reddedilenler; her kayıtta `adim` ve `neden`. 01.2.3.1 (tanımsız / bilgi taşımayan), 01.3 (süreç dışı bırakılan), 02.1.2 aşamaları, 02.2 ve 02.3 (üretilip reddedilen), 03 (kalite), 04 (aday sete seçilmeyen).
+  - `rol`: hedef, kimlik, dönem ve segment kolonları. Değişken değildir; önceden `kalan` içinde `rol` alanıyla duruyordu.
+  - `profil_asamalari`: 02.1.2'nin beş aşaması ve hangilerinin onaylandığı. `sayim`: listelerin sayıları.
+- **Kayıt.** `ad`, `eski_ad` (ad değiştiyse), `kaynak` (ham / cozum / kural / kesif), `aciklama` (sözlük açıklaması; üretilende anlamı), `ozet`, üretilende `ifade` ve `kaynak_kolonlar`.
+- **`ozet` (temel istatistikler):** `tip`, `satir`, `bos_adet` (yeni), `bos_oran`, `tekil`, `tekrar_oran`, `en_sik`, sayısal kolonda `min`, `medyan`, `ortalama`, `max`. Ham kolonda 01.2.3.1 veri seti profilinden, üretilen değişkende üretildiği an tablodan. Kişisel veri taşıyan kolonun değerleri ve istatistikleri yazılmaz.
+- **02.1.2 kararları (`kararlar`, `akis_faz02.asama_karar_kayitlari`).** Yalnız ONAYLANAN aşamalar yazılır. Kolonun her kararı bir kayıttır: `asama`, `asama_adi`, `kural`, `karar` (Tut, Çıkar, "Çözüm: …", "Düzeltme: …", "Kaldı …", "Üretime girmez"), `karari_veren` (dil modeli / kod / kullanıcı / kural), `gerekce`; karar dil modelindense kodun önerisi ayrıca `kod_onerisi` ve `kod_gerekcesi`. Çıkan kolonun `adim` alanı "02.1.2 Aşama N (ad)", `neden` alanı "kural: karar. gerekçe" olur. Tutulan kolonun kararları (Tut, düzeltme) `onaylanan` kaydında durur.
+- **Aşamalar sürerken** onaylanmamış aşamaların kolonları `onaylanan`da kalır; adım tamamlanınca 02.1'in bütün sonucu yazılır.
+- **Sınır.** Defterdeki istatistikler şimdilik yalnız dosyadadır; 02.3'te dil modeline giden kolon listesine eklenmedi (istenirse eklenir).
+- **Test.** `defter_test.py` (14).

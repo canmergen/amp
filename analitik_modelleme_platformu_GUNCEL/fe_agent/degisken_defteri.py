@@ -31,7 +31,7 @@ import json
 import math
 import re
 
-DEFTER_SURUMU = 1
+DEFTER_SURUMU = 2
 DEFTER_DOSYA = "degisken_defteri.json"
 EN_SIK_ADET = 5
 # Dil modeline giden liste siniri (istek boyu).
@@ -138,7 +138,7 @@ def ozet_cikar(seri):
     dolu = seri.dropna()
     sayisal = pd.api.types.is_numeric_dtype(seri) and not pd.api.types.is_bool_dtype(seri)
     oz = {"tip": "sayısal" if sayisal else ("mantıksal" if pd.api.types.is_bool_dtype(seri) else "kategorik"),
-          "satir": n, "bos_oran": (bos / float(n)) if n else None,
+          "satir": n, "bos_adet": bos, "bos_oran": (bos / float(n)) if n else None,
           "tekil": int(dolu.nunique()),
           "tekrar_oran": (float(seri.duplicated().sum()) / n) if n else None,
           "en_sik": [[_deger(v), int(a)] for v, a in dolu.value_counts().head(EN_SIK_ADET).items()]}
@@ -158,7 +158,7 @@ def _profil_ozeti(kp):
     dolu, bos = int(kp.get("dolu") or 0), int(kp.get("bos") or 0)
     satir = dolu + bos
     tekrar = kp.get("tekrar")
-    oz = {"tip": kp.get("tip") or kp.get("tur") or "", "satir": satir,
+    oz = {"tip": kp.get("tip") or kp.get("tur") or "", "satir": satir, "bos_adet": bos,
           "bos_oran": kp.get("null_oran") if kp.get("null_oran") is not None
           else ((bos / float(satir)) if satir else None),
           "tekil": kp.get("tekil"),
@@ -395,11 +395,29 @@ def _ham_cikarilanlar(durum):
     """{kolon: (adim, neden)}: ham kolonlarin ciktigi yer ve nedeni."""
     cikti = {}
     meta = {str(v) for v in (durum.get("meta") or {}).values() if v}
+    # 02.1.2 ASAMALI DUZEN: asama onaylandikca o asamada cikan kolonlar,
+    # hangi kuralda, kimin karariyla ve neden (asama_karar_kayitlari).
+    asamali_tam = None
+    try:
+        from fe_agent import akis_faz02 as f2
+        p_ = durum.get("profil") or {}
+        if f2.profil_asamali(p_):
+            ak = f2.asama_karar_kayitlari(durum)
+            for k, r in ak["cikan"].items():
+                if str(k) in meta:
+                    continue
+                cikti[str(k)] = ("02.1.2 Aşama %d (%s)" % (r["asama"], r["asama_adi"]),
+                                 "%s: %s. %s" % (r["kural"], r["karar"], r["gerekce"]))
+            asamali_tam = f2.ASAMA_SAYISI in ak["onayli"]
+    except Exception:           # pylint: disable=broad-except
+        asamali_tam = None
     # 02.1: uretime girmeyenler ve Çıkar denenler.
     try:
         from fe_agent import akis_faz02 as f2
         p = durum.get("profil") or {}
         t = p.get("profil_teshis") or {}
+        if asamali_tam is False:
+            raise LookupError("asamalar suruyor: yalniz onaylanan asamalar yazilir")
         karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
         neden = {}
         for anahtar, metin in (("cok_bos", "çoğu boş"), ("sabit", "hep aynı değer"),
@@ -412,7 +430,7 @@ def _ham_cikarilanlar(durum):
         if durum.get("updt_asama") in getattr(f2, "UPDT_ASAMALARI", ())[2:] or not f2.updt_modu(durum):
             for k in f2.kusurlu_kolonlar(durum):
                 k = str(k)
-                if k in meta:
+                if k in meta or k in cikti:
                     continue
                 cikti[k] = ("02.1", "Veri profili: " + (
                     neden.get(k) or ("kararınızla çıkarıldı" if karar.get(k) == f2.PROFIL_KARAR_CIKAR
@@ -458,7 +476,14 @@ def _sonraki_elemeler(durum):
 
 
 def kur(durum):
-    """Defterin tamami (dict). Baz veri profili yoksa None."""
+    """Defterin tamami (dict). Baz veri profili yoksa None.
+    SURUM 2: "onaylanan" (o an veri setinde duran degiskenler), "reddedilen"
+    (cikarilan ham kolonlar ve uretilip reddedilenler; adim ve nedeniyle) ve
+    "rol" (hedef, kimlik, donem, segment: degisken degil). Her kayitta
+    "aciklama" (sozluk aciklamasi / uretilenin anlami) ve "ozet" (tip, satir,
+    bos adedi ve orani, tekil, en sik degerler, min, medyan, ortalama, max).
+    02.1.2 asamalari onaylandikca kolonun o asamalardaki kararlari
+    "kararlar" alanina yazilir (kural, karar, karari veren, gerekce)."""
     profil = durum.get("profil") or {}
     ham = [k for k in (profil.get("kolon_ozet") or []) if isinstance(k, dict) and k.get("ad") is not None]
     if not ham:
@@ -470,29 +495,41 @@ def kur(durum):
     ham_cikan = _ham_cikarilanlar(durum)
     sonra = _sonraki_elemeler(durum)
     b = bilinenler(durum)
-    kalan, cikarilan = [], []
+    try:
+        from fe_agent import akis_faz02 as f2
+        asama = f2.asama_karar_kayitlari(durum)
+        asama_adlari = [{"no": x["no"], "ad": x["ad"], "onayli": x["no"] in asama["onayli"]}
+                        for x in f2.PROFIL_ASAMALARI] if f2.profil_asamali(profil) else []
+    except Exception:           # pylint: disable=broad-except
+        asama, asama_adlari = {"onayli": [], "acik": 0, "cikan": {}, "kararlar": {}}, []
+    onaylanan, reddedilen, rol = [], [], []
     ham_adlar = set()
     for kp in ham:
         eski = str(kp["ad"])
         ad = str(yeni_ad.get(eski) or eski)
         ham_adlar |= {eski, ad}
         kayit = {"ad": ad, "kaynak": "ham", "kaynak_adi": KAYNAK_ADI["ham"],
-                 "anlam": str(anlam.get(ad) or anlam.get(eski) or "")[:600],
+                 "aciklama": str(anlam.get(ad) or anlam.get(eski) or "")[:600],
                  "ozet": _profil_ozeti(kp)}
         if ad != eski:
             kayit["eski_ad"] = eski
+        k21 = asama["kararlar"].get(ad) or asama["kararlar"].get(eski)
+        if k21:
+            kayit["kararlar"] = k21
         if eski in meta or ad in meta:
             kayit["rol"] = rol_adi.get(meta.get(eski) or meta.get(ad), "")
+            rol.append(kayit)
+            continue
         yer = ham_cikan.get(eski) or ham_cikan.get(ad) or sonra.get(ad) or sonra.get(eski)
-        if yer and not kayit.get("rol"):
+        if yer:
             kayit["adim"], kayit["neden"] = yer
-            cikarilan.append(kayit)
+            reddedilen.append(kayit)
         else:
-            kalan.append(kayit)
+            onaylanan.append(kayit)
 
     def uretilen_kaydi(r):
         return {"ad": r["ad"], "kaynak": r.get("kaynak") or "", "kaynak_adi": KAYNAK_ADI.get(r.get("kaynak"), ""),
-                "anlam": r.get("anlam") or "", "ifade": r.get("ifade") or "",
+                "aciklama": r.get("anlam") or "", "ifade": r.get("ifade") or "",
                 "kaynak_kolonlar": r.get("kaynak_kolonlar") or [], "ozet": r.get("ozet") or {},
                 "uretildigi_adim": r.get("adim") or ""}
     for r in b["uretilen"]:
@@ -502,33 +539,38 @@ def kur(durum):
         yer = sonra.get(r["ad"])
         if yer:
             kayit["adim"], kayit["neden"] = yer
-            cikarilan.append(kayit)
+            reddedilen.append(kayit)
         else:
-            kalan.append(kayit)
+            onaylanan.append(kayit)
     for r in b["reddedilen"]:
         kayit = uretilen_kaydi(r)
         kayit["adim"], kayit["neden"] = r.get("eleme_adim") or r.get("adim") or "", r.get("neden") or ""
         if r.get("olcum"):
             kayit["olcum"] = r["olcum"]
-        cikarilan.append(kayit)
+        reddedilen.append(kayit)
 
     def say(liste, kaynak):
         return sum(1 for x in liste if x.get("kaynak") == kaynak)
     return {
         "surum": DEFTER_SURUMU,
-        "aciklama": "Değişken defteri: veri setinde kalan ve çalışma boyunca çıkarılan ya da "
-                    "reddedilen bütün değişkenler. Her adım sonunda yeniden yazılır.",
+        "tanim": "Değişken defteri. onaylanan: şu an veri setinde duran değişkenler (ham ve üretilen). "
+                 "reddedilen: çalışma boyunca çıkarılan ham kolonlar ve üretilip reddedilen değişkenler; "
+                 "hangi adımda ve neden. rol: hedef, kimlik, dönem ve segment kolonları (değişken değildir). "
+                 "Her adım ve 02.1.2'nin her aşaması onaylandıkça yeniden yazılır.",
         "veri_seti": durum.get("veri_seti"),
         "hedef": (durum.get("meta") or {}).get("target"),
         "guncelleme": _simdi(),
         "asama": durum.get("updt_asama") or "",
-        "sayim": {"kalan": len(kalan), "cikarilan": len(cikarilan),
-                  "kalan_ham": say(kalan, "ham"),
-                  "kalan_uretilen": len(kalan) - say(kalan, "ham"),
-                  "cikarilan_ham": say(cikarilan, "ham"),
-                  "cikarilan_uretilen": len(cikarilan) - say(cikarilan, "ham")},
-        "kalan": kalan,
-        "cikarilan": cikarilan,
+        # 02.1.2 asamalari: hangileri onaylandi (kararlari deftere islendi).
+        "profil_asamalari": asama_adlari,
+        "sayim": {"onaylanan": len(onaylanan), "reddedilen": len(reddedilen), "rol": len(rol),
+                  "onaylanan_ham": say(onaylanan, "ham"),
+                  "onaylanan_uretilen": len(onaylanan) - say(onaylanan, "ham"),
+                  "reddedilen_ham": say(reddedilen, "ham"),
+                  "reddedilen_uretilen": len(reddedilen) - say(reddedilen, "ham")},
+        "onaylanan": onaylanan,
+        "reddedilen": reddedilen,
+        "rol": rol,
     }
 
 

@@ -1282,6 +1282,130 @@ def profil_asama_gecisi(durum, govde, butce=None):
     return profil_karti(durum, karar=True), None
 
 
+def _karari_veren(secilen, oneri_kaydi):
+    """Secimin kaynagi: "dil modeli" (dil modelinin karari secili), "kod"
+    (kodun onerisi secili), "kullanıcı" (ikisinden de farkli) ya da "kural"
+    (oneri yok)."""
+    o = oneri_kaydi if isinstance(oneri_kaydi, dict) else {}
+    if not o.get("oneri"):
+        return "kural"
+    if o.get("kaynak") == "dil modeli":
+        if secilen == o.get("oneri"):
+            return "dil modeli"
+        return "kod" if secilen == o.get("kod_oneri") else "kullanıcı"
+    return "kod" if secilen == o.get("oneri") else "kullanıcı"
+
+
+def asama_karar_kayitlari(durum):
+    """ONAYLANAN asamalarin kararlari, degisken defteri icin:
+    {"onayli": [asama no], "acik": no, "cikan": {kolon: kayit}, "kararlar":
+    {kolon: [kayit]}}. kayit: {"asama", "asama_adi", "kural", "karar",
+    "karari_veren" (dil modeli / kod / kullanıcı / kural), "gerekce",
+    "kod_onerisi", "kod_gerekcesi"}. "cikan": kolonun ciktigi (ilk) karar;
+    "kararlar": kolonun onaylanan asamalardaki butun kararlari (Tut,
+    duzeltme, cozum dahil). Asamali duzen degilse bos."""
+    p = durum.get("profil") or {}
+    bos = {"onayli": [], "acik": 0, "cikan": {}, "kararlar": {}}
+    if not profil_asamali(p) or not isinstance(p.get("profil_ek"), dict):
+        return bos
+    ek, t = p["profil_ek"], p.get("profil_teshis") or {}
+    try:
+        onayli = sorted({int(x) for x in (p.get("asama_onay") or [])})
+    except (TypeError, ValueError):
+        onayli = []
+    kad = {x[0]: x[1] for x in PROFIL_KONTROLLERI}
+    asama_adi = {x["no"]: x["ad"] for x in PROFIL_ASAMALARI}
+    lo = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
+    from fe_agent import kolon_cozum as kc
+    ad_ = lambda kod: kc.COZUM_ADI.get(kod, {"tut": "Tut", "cikar": "Çıkar", "birak": "Olduğu gibi bırak"}.get(kod, kod))
+    cikan, kararlar = {}, {}
+
+    def yaz(no, kolon, kural, karar, veren, gerekce, o=None, cikti=False):
+        o = o if isinstance(o, dict) else {}
+        kayit = {"asama": no, "asama_adi": asama_adi.get(no, ""), "kural": kad.get(kural, kural),
+                 "karar": karar, "karari_veren": veren, "gerekce": str(gerekce or "")}
+        if o.get("kaynak") == "dil modeli" and o.get("kod_oneri"):
+            kayit["kod_onerisi"] = ad_(o["kod_oneri"])
+            kayit["kod_gerekcesi"] = str(o.get("kod_gerekce") or "")
+        kararlar.setdefault(str(kolon), []).append(kayit)
+        if cikti:
+            cikan.setdefault(str(kolon), kayit)
+
+    def tut_cikar(no):
+        deger = asama_karar_degerleri(durum, no)
+        for a in asama_kurallari(no):
+            if a not in KARAR_KONTROLLERI:
+                continue
+            for x in ek.get(a) or []:
+                k = x["kolon"]
+                if k not in deger or k in cikan:
+                    continue
+                o = (lo.get(a) or {}).get(k) or {}
+                if o.get("oneri") not in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR):
+                    o = {"oneri": _karar_kurali(a), "kaynak": "kod",
+                         "gerekce": KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "")}
+                veren = _karari_veren(deger[k], o)
+                yaz(no, k, a, ad_(deger[k]), veren,
+                    o.get("gerekce") if veren == "dil modeli" else
+                    (o.get("kod_gerekce") or o.get("gerekce")) if veren == "kod" else "Kullanıcı seçimi.", o)
+        for k, v in deger.items():
+            if v == PROFIL_KARAR_CIKAR and k not in cikan and kararlar.get(k):
+                # Kolonu cikaran kural: bu asamada Çıkar onerilen ilk kural, yoksa ilki.
+                bu = [r for r in kararlar[k] if r["asama"] == no]
+                cikan[k] = next((r for r in bu if r["karar"] == "Çıkar"), bu[0] if bu else kararlar[k][-1])
+    if 1 in onayli:
+        for k in t.get("sabit") or []:
+            yaz(1, k, "sabit", "Üretime girmez", "kural", "Her satırda aynı değer var; satırları ayırt etmez.", cikti=True)
+        oneri, sec, gercek = cozum_onerileri(durum), cozum_secimi(durum), etkin_bos_gercek(durum)
+        for a in COZUM_KONTROLLERI:
+            for k in t.get(a) or []:
+                if (a == "cok_bos" and k in gercek) or k in cikan:
+                    continue
+                o = oneri.get(k)
+                if not o or len(o.get("secenekler") or []) < 2:
+                    yaz(1, k, a, "Üretime girmez", "kural", "Uygun çözüm bulunmadı.", cikti=True)
+                    continue
+                if o.get("kontrol") != a:
+                    continue                    # cozumu baska kontrolun satirinda
+                s_ = sec.get(k)
+                veren = _karari_veren(s_, o)
+                yaz(1, k, a, ad_(s_) if s_ == "cikar" else "Çözüm: %s" % ad_(s_), veren,
+                    o.get("gerekce") if veren == "dil modeli" else
+                    (o.get("kod_gerekce") or o.get("gerekce")) if veren == "kod" else "Kullanıcı seçimi.",
+                    o, cikti=(s_ == "cikar"))
+        tut_cikar(1)
+    if 2 in onayli:
+        tut_cikar(2)
+    if 3 in onayli:
+        for g in ek.get("ayni_gruplar") or []:
+            kalan = _ayni_kalan(p, g)
+            o = {"oneri": g.get("oneri"), "kaynak": "dil modeli" if g.get("kaynak") == "dil modeli" else "kod",
+                 "gerekce": g.get("gerekce"), "kod_oneri": g.get("kod_oneri"), "kod_gerekce": g.get("kod_gerekce")}
+            veren = _karari_veren(kalan, o)
+            ger = (o.get("gerekce") if veren == "dil modeli" else
+                   (o.get("kod_gerekce") or o.get("gerekce")) if veren == "kod" else "Kullanıcı seçimi.")
+            kural = "yakin_icerik" if g.get("tur") == "yakin" else "ayni_icerik"
+            for u in g["uyeler"]:
+                if u == kalan:
+                    yaz(3, u, kural, "Kaldı (grubun öteki kolonları: %s)" % ", ".join(x for x in g["uyeler"] if x != u),
+                        veren, ger, o)
+                elif u not in cikan:
+                    yaz(3, u, kural, "Çıkar (%s kaldı)" % kalan, veren, ger, o, cikti=True)
+    if 4 in onayli:
+        duz, dsec = duzeltme_onerileri(durum), duzeltme_secimi(durum)
+        haric = asama_cikanlari(durum, 3)
+        for a in asama_kurallari(4):
+            for k, o in (duz.get(a) or {}).items():
+                if k in haric:
+                    continue
+                s_ = (dsec.get(a) or {}).get(k, o.get("oneri"))
+                veren = _karari_veren(s_, o)
+                yaz(4, k, a, "Düzeltme: %s" % ad_(s_), veren,
+                    o.get("gerekce") if veren == "dil modeli" else
+                    (o.get("kod_gerekce") or o.get("gerekce")) if veren == "kod" else "Kullanıcı seçimi.", o)
+    return {"onayli": onayli, "acik": profil_asamasi(p), "cikan": cikan, "kararlar": kararlar}
+
+
 # GEREKCESIZ KARAR EKSIKTIR: dil modeli secimi yazip gerekceyi yazmadiysa
 # karar gecerli kalir ama gerekcesi icin yeniden sorulur (en cok bu kadar
 # kez; hala yazmazsa kartta "gerekçe yazmadı" diye gorunur).
