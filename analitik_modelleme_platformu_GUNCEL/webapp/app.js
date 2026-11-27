@@ -17687,6 +17687,12 @@ function profilKartiEkle(alan, blok, devamdan) {
        «Onaylandı» görünür. Önceden kart yerinde kilitlenirken şerit yeniden
        çizilmiyor, son aşama «Şu an buradasınız» diye kalıyordu. */
     let seritCiz = () => {};
+    /* Şerit ve aşama bilgisi kartın başında DEĞİL, tablonun genelinden
+       (karolar, türler, eksik değer oranına göre kolonlar) sonra, hemen
+       «Kontroller» bölümünün üstünde durur: aşamalar kontrollerin
+       aşamalarıdır. Sonraki aşamalarda tablonun geneli gizli olduğundan
+       şerit yine kartın başına gelir. */
+    const asamaUst = [];
     if (asama) {
         const serit = elYap("div", "pf-asamalar");
         serit.setAttribute("role", "list");
@@ -17709,14 +17715,14 @@ function profilKartiEkle(alan, blok, devamdan) {
             });
         };
         seritCiz(!!(blok && blok.kilit));
-        kart.appendChild(serit);
+        asamaUst.push(serit);
         if (asamaNo) {
             const ab = elYap("div", "pf-asama-bilgi");
             metinYaz(ab, "**Aşama " + asamaNo + " / " + asama.toplam + ": " + asama.ad + ".** " + (asama.aciklama || "")
                 + " Bu aşamaya giren kolon: **" + ftBinlik(asama.giren) + "**"
                 + (Number(asama.onceki_cikan) > 0 ? "; önceki aşamalarda çıkan **" + ftBinlik(asama.onceki_cikan)
                     + "** kolon bu aşamada sorulmaz." : "."));
-            kart.appendChild(ab);
+            asamaUst.push(ab);
             if (asamaNo > 1) kart.classList.add("pf-asama-sonraki");
         }
     }
@@ -18964,6 +18970,7 @@ function profilKartiEkle(alan, blok, devamdan) {
     const tsar = elYap("div", "pf-tablo-sar");
     tsar.appendChild(tablo);
     kb.appendChild(tsar);
+    asamaUst.forEach(x => analiz.appendChild(x));
     analiz.appendChild(kb);
 
     /* Hedef dağılımı */
@@ -19127,7 +19134,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                     if (yeni && kart.parentNode) {
                         kart.parentNode.insertBefore(yeni, kart);
                         kart.remove();
-                        try { yeni.scrollIntoView({ block: "start" }); } catch (e) { /* eski tarayıcı */ }
+                        /* Şerit kartın başında olmayabilir (1. aşamada tablonun genelinden sonra). */
+                        try { (yeni.querySelector(".pf-asamalar") || yeni).scrollIntoView({ block: "start" }); } catch (e) { /* eski tarayıcı */ }
                         const not = d.uyari && yeni.querySelector(".pf-asama-hata");
                         if (not) { not.textContent = d.uyari; not.hidden = false; }
                     }
