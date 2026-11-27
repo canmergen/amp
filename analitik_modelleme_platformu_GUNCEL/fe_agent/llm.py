@@ -4899,29 +4899,51 @@ SISTEM_GELENEKSEL = """Sen bir kredi riski modelleme uzmanısın. Sınıflandır
 modeli için geleneksel (kural tabanlı) değişken üretimi planlıyorsun. Her
 BİRİM tek kolon, kolon ailesi (aynı ölçünün farklı pencereleri), aileler
 arası bir kolon çifti ya da grubu ya da satır düzeyidir. Her birimde
-kolonların adı, açıklaması, sayıları ve o birimde MÜMKÜN olan dönüşüm
-kodları var.
+kolonların adı, açıklaması ve o birimde MÜMKÜN olan dönüşüm kodları var.
 
-KARAR AŞAMALARI (bu sırayla düşün):
-1. aşama, kolonun kendi dönüşümü: modele bilgi katar mı? Tek kolon kodları
-   (kare, işaret, sıfır bayrağı, eşik, dilim, kova) ve kategorik kodlar
-   (frekans, one-hot, WoE, hedef ortalaması). Ölçek dönüşümleri (logaritma,
-   karekök, kırpma, sıra, standartlaştırma) bu adımda YOKTUR; her değişkenin
-   modele hangi hâliyle gireceğine sonraki adımda (03.1 Tek Değişken
-   Analizi) karar verilir.
-2. aşama, aile içi (yalnız pencere ailesinde): pencereler arasından
-   çıkarılabilecek bilginin en çoğu: oran, fark (sıradaki pencere çiftleri),
-   oran ve fark bütün pencere çiftlerinde (oran_tum, fark_tum), dönem
-   parçaları, payları ve oranları (donem, donem_pay, donem_oran: birikimli
-   pencerelerin arasında kalan dönemler), normalize oran, büyüme, eğim,
-   değişkenlik, art arda artış, en yoğun dönem payı. Bilgi katacak olanların
-   hepsini seç; aynı bilgiyi tekrarlayanlardan birini seç (aynı çiftte oran,
-   normalize oran ve büyüme aynı sırayı verir).
-3. aşama, aileler arası (çift, grup, segment, satır): net akış, oran,
-   ortalama tutar, pay, yoğunlaşma, segment içi göreli değer, segment
-   medyanına oran, satırdaki eksik sayısı.
+AMAÇ: üretilen her değişken modele (doğrusal ya da ağaç) yeni bilgi
+katmalı. Katmayan değişken üretilmez.
 
-KURALLAR:
+HESABI KOD YAPAR, SEN YAPMAZSIN. Her birimde "ölçüm" alanında kodun her
+dönüşüm için ölçtüğü sonuç SÖZLE verilir:
+- KOD ÜRET / ÜRETME: kodun ölçüme göre kararı.
+- doğrusal modelde: dönüşümün kolonu kendi kaynak kolonlarıyla birlikte
+  lojistik modele girince ayırma gücü (C-value) artıyor mu.
+- ağaç modelinde: dönüşümün kolonları birimin kaynak kolonlarıyla birlikte
+  ağaç modeline (gradient boosting) girince artıyor mu. "ölçülmez": tek
+  kolonun dönüşümüdür, ağaç aynı bölmeleri ham kolonla kurar.
+- Düzeyler: "belirgin artış" (artış yeterince büyük, şans eseri değil ve
+  verinin iki yarısında da var), "artış şans payı içinde", "artış var ama
+  çok küçük", "artış yok".
+- Ek bilgiler: kaynakla aynı sıra, IV kaynaktan yüksek mi, boş oranı,
+  başka bir dönüşümle aynı sıra.
+Ölçümler yalnız eğitim satırlarında, örneklemesiz ve model kurulduğu
+satırların DIŞINDA puanlanarak yapılır.
+
+SENİN İŞİN: her dönüşüm için ÜRET ya da ÜRETME kararı ve gerekçesi. Kararı
+İKİ şeye dayandır:
+(1) ANLAM: kolonun adı ve açıklaması ne ölçüyor, bu dönüşüm o kolonda hangi
+    davranışı ortaya çıkarır (ör. kısa pencerenin uzun pencereye oranı son
+    dönemdeki hızlanmayı gösterir).
+(2) ÖLÇÜM: kodun verdiği düzeyler.
+Çoğu durumda kodla aynı kararı verirsin. Koddan AYRILABİLECEĞİN durumlar:
+- Kod ÜRET diyor ama dönüşüm anlamca boş ya da yanıltıcı (kimlik, kod
+  numarası, tarihin sayıya çevrilmiş hâli, hedefi doğrudan yansıtan kolon,
+  açıklamasına göre o dönüşümün anlamı olmayan kolon): ÜRETME.
+- Kod ÜRETME diyor ama anlamca güçlü bir risk göstergesi ve ölçümün
+  göremeyeceği bir nedeni var (ör. başka birimlerdeki kolonlarla birlikte
+  anlam kazanır; ölçüm yalnız birimin kendi kaynaklarıyla yapılır): ÜRET.
+  "Artış yok" ölçümüne rağmen ÜRET diyorsan nedeni bu olmalı ve açıkça yaz.
+- Aynı bilgiyi veren iki dönüşümden (aynı çiftte oran, normalize oran ve
+  büyüme aynı sırayı verir) yalnız birini ÜRET.
+Emin değilsen kodla aynı kararı ver.
+
+SAYI YAZMA: gerekçelerde ölçüm sayısı (IV, C-value, artış, yüzde, ondalık
+sayı) YAZMA, uydurma, tahmin etme. Sana sayı verilmedi; sayılar ekranda
+kodun ölçümünden gösterilir. Ondalık sayı ya da yüzde içeren gerekçe
+gösterilmez. Pencere uzunluğu gibi kolonun adındaki tam sayılar yazılabilir.
+
+PARAMETRELER:
 - esik yalnız açıklamadan açık bir iş eşiği çıkıyorsa:
   "param": {"esik": {"esik": 30, "yon": ">="}}.
 - kova yalnız açıklamadan iş kuralı aralıkları çıkıyorsa:
@@ -4929,51 +4951,32 @@ KURALLAR:
 - segment ve grup_oran yalnız verilen segment kolonlarından biriyle:
   "param": {"segment": {"segment": "KOLON"}} ya da
   "param": {"grup_oran": {"segment": "KOLON"}}.
-- Bilgi katmayacak dönüşümü seçme; hiçbiri katmıyorsa boş liste ver.
-- Kod önerisi (kural) verilir; daha iyisini biliyorsan değiştir.
-- MODEL: üretilen değişkenler hem ağaç hem doğrusal modelde kullanılacak;
-  model türüne göre ayırma yok.
-- ÖLÇÜME GÖRE yeni bilgi getiren (artış 0,02 ve üstü, ilişki 0,95'in
-  altında; ya da doğrusal uyum 0,01 ve üstü) dönüşümlerin HEPSİNİ seç;
-  yalnız aynı bilgiyi tekrarlayanlardan birini bırak. Seçmezsen kod ölçüme
-  göre ekler. Seçilen dönüşümün kolonlarından değer taşımayanları kod
-  üretimin dışında bırakır; kolon seçmen gerekmez.
+- Ölçek dönüşümleri (logaritma, karekök, kırpma, sıra, standartlaştırma) bu
+  adımda YOKTUR; 03.1 Tek Değişken Analizi'nde kararlaştırılır.
 
-ÖLÇÜM: her birimde kodun ÖLÇTÜĞÜ katkı verilir ("katkı" alanı): kaynak
-kolonların en iyi IV'si ve her dönüşümün ürettiği kolonların en iyi IV'si,
-kaynağa göre artış ve kaynakla sıra ilişkisi (Spearman, 0 ile 1). IV 10 eşit
-frekanslı aralıkla, yalnız eğitim satırlarında, örneklemesiz ölçülür.
-IV sıra tabanlıdır: kaynağın sırasını koruyan tek kolon dönüşümünde
-(pozitif kolonda kare, dilim, işaret, sıfır bayrağı) IV artmaz. Bunlar için
-ayrıca "doğrusal uyum" verilir: dönüşüm kaynak kolonla birlikte lojistik
-modele girince C-value ne kadar artıyor (0,01 ve üstü belirgin; U şeklindeki
-ilişkide kare terimi böyle görünür). Kararını bu sayılara
-dayandır: artış belirgin (0,02 ve üstü) ve ilişki 0,95'in altındaysa yeni
-bilgi var; ilişki 0,95 ve üstüyse kaynakla aynı bilgi; aynı bilgiyi taşıyan
-iki dönüşümden IV'si yüksek olanı seç.
-
-GEREKÇE: her birimde ilgili aşamanın gerekçesini ayrı yaz: "g1" (1. aşama:
-kolonun kendi dönüşümü), "g2" (yalnız ailede, 2. aşama: pencereler arası),
-"g3" (yalnız çift, grup, segment ve satırda). HER gerekçe iki şey söyler:
-(a) ölçülen sayılar (IV, artış, ilişki), (b) dönüşümün kolonun anlamında
-hangi davranışı yakaladığı. Biçim: "<seçtiğin dönüşüm> IV'yi <kaynak IV>'ten
-<dönüşümün IV'si>'ye çıkarıyor (artış <artış>), kaynakla ilişkisi <ilişki>:
-<kolonun anlamında yakaladığı davranış>." Köşeli ayraç içindekiler YER
-TUTUCUDUR: sayıları YALNIZ o birimin "katkı" alanından al; orada olmayan
-sayı YAZMA, başka birimin sayısını ya da cümlesini KOPYALAMA (her gerekçe
-kodun ölçümüyle karşılaştırılır, tutmayan gösterilmez). Her gerekçe o
-aşamada SEÇTİĞİN dönüşümü anlatır: g1 yalnız 1. aşama dönüşümünü, g2 yalnız
-pencereler arası dönüşümü. "Bilgi katar", "bilgi
-katmaz", "modele katkı sağlar" gibi sayısız, genel cümle YAZMA.
-"secilmeyen": seçilmeyen her mümkün kodun sayıyla nedeni (ör. "Fark: artış
-0,00, ilişki 0,97, oranla aynı bilgi").
+HANGİ DÖNÜŞÜMLER İÇİN KAYIT YAZILIR:
+- Kodun ÜRET dediği HER dönüşüm için bir kayıt (kararın "uret" ya da
+  "uretme").
+- Kodun ÜRETME dediği ya da ölçmediği dönüşüm için YALNIZ sen "uret"
+  diyorsan bir kayıt. Kayıt yazmadığın dönüşüm "uretme" sayılır (kodla
+  aynı).
+Her kayıtta:
+- "kod": dönüşüm kodu (mümkün listesinden, AYNEN).
+- "karar": "uret" ya da "uretme".
+- "anlam": bir cümle; kolon ne ölçüyor ve bu dönüşüm onda neyi gösterir.
+  Kolonun adını ya da açıklamasını kullan; genel cümle yazma.
+- "sonuc": bir cümle; neden bu karar. Ölçümün düzeyini SÖZLE an (ör. "ölçüm
+  doğrusal modelde belirgin artış gösteriyor") ve anlamla bağla. Koddan
+  ayrılıyorsan nedenini yaz.
 
 ÇIKTI KURALI: YALNIZCA JSON:
-{"birimler":[{"id":"...","sec":["kod",...],"param":{},"g1":"...","g2":"...","g3":"...","secilmeyen":"..."}]}
-Verilen HER birim için bir kayıt yaz; "id" AYNEN kopyalanır.""" + SINIRLAYICI_KURALI
-# TAM KAPSAMA: kart dil modeli butun birimlere karar verince acilir.
-# Parcalar esanli gider; cevapta eksik kalan ya da hata veren birimler
-# daha kucuk parcalarla yeniden sorulur (GELENEKSEL_TURLER). Uc turden
+{"birimler":[{"id":"...","kararlar":[{"kod":"...","karar":"uret","anlam":"...","sonuc":"..."}],"param":{}}]}
+Verilen HER birim için bir kayıt yaz ("kararlar" boş liste olabilir); "id"
+AYNEN kopyalanır.""" + SINIRLAYICI_KURALI
+
+
+# Dil modeli cagrisi parca parca ve kosut: sure asimi parca basinadir. Bir
+# parca alinamazsa birimleri daha kucuk parcalarla yeniden sorulur; uc turdan
 # sonra da alinamayan birim "dil modeli cevap vermedi" diye isaretlenir.
 GELENEKSEL_TURLER = (12, 4, 1)
 GELENEKSEL_PARALEL = 6
@@ -4987,26 +4990,30 @@ def _gerekce_birlestir(g1, g2, g3):
 
 
 def _geleneksel_parca(parca, katalog_metni, segmentler, model_turu="agac"):
+    """Bir parca birim icin dil modelinin kararlari. Doner: {id: {"sec"
+    (Üret dedikleri), "param", "dm": {kod: {"karar": "uret" / "uretme",
+    "anlam", "sonuc", "sayi" (gerekcesine olcum sayisi yazdiysa True; metin
+    gosterilmez)}}, ...}}. Dil modeline sayi verilmez; yazdigi sayi da
+    gosterilmez (sayilar yalniz kodun olcumunden gelir)."""
     from fe_agent import geleneksel as G
     satirlar = []
     for x in parca:
         if not x.get("mumkun"):
             continue
         kol = x.get("kolonlar") or []
-        satirlar.append("id=%s | %s, %s. aşama | %s | kolon: %s%s | açıklama: %s | ölçü: %s | sayılar: %s | "
-                        "mümkün: %s | kural: %s%s | katkı: %s" % (
-                            x["id"], x.get("tur"), x.get("asama") or "-", x.get("ad"), ", ".join(kol[:3]),
+        satirlar.append("id=%s | %s | %s | kolon: %s%s | açıklama: %s | ölçü: %s | sayılar: %s | "
+                        "mümkün: %s%s\n  ölçüm: %s" % (
+                            x["id"], x.get("tur"), x.get("ad"), ", ".join(kol[:3]),
                             (" (+%d)" % (len(kol) - 3)) if len(kol) > 3 else "",
                             (x.get("aciklama") or "-")[:140], x.get("olcu") or "-",
                             x.get("ozet", ""), ", ".join(x.get("mumkun") or []),
-                            ", ".join(x.get("kural") or []) or "yok",
                             (" | öneri nedeni: %s" % x["gerekce"][:160]) if x.get("gerekce") else "",
-                            x.get("katki") or "ölçülmedi"))
+                            x.get("katki") or ("ölçülmedi; kodun kuralla önerdikleri: %s"
+                                               % (", ".join(x.get("kural") or []) or "yok"))))
     if not satirlar:
         return {}
-    istek = ("Model türü: %s\n\nDönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s"
-             % ({"agac": "ağaç (gradient boosting)", "dogrusal": "doğrusal (lojistik, skorkart)"}.get(model_turu, "ağaç ve doğrusal modelin ikisi (ayrım yok)"),
-                katalog_metni, ", ".join(segmentler) or "yok",
+    istek = ("Dönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s"
+             % (katalog_metni, ", ".join(segmentler) or "yok",
                 _veri_blogu("Birimler:", "\n".join(satirlar))))
     ham = _cagir(SISTEM_GELENEKSEL, istek, sicaklik=0.1, zaman_asimi=GELENEKSEL_ZAMAN_ASIMI,
                  deneme=1, havuz=_GELENEKSEL_HAVUZ)
@@ -5014,21 +5021,36 @@ def _geleneksel_parca(parca, katalog_metni, segmentler, model_turu="agac"):
     if not isinstance(veri, dict) or not veri.get("birimler"):
         print("02.2 dil modeli cevabı ayrıştırılamadı (%d birim): %s" % (
             len(satirlar), model_adi_gizle(str(ham or "")[:300]).replace("\n", " ")), flush=True)
-    gecerli = {x["id"]: set(x.get("mumkun") or []) for x in parca}
+    gecerli = {x["id"]: list(x.get("mumkun") or []) for x in parca}
+    param_on = {x["id"]: x.get("param_on") or {} for x in parca}
     sonuc = {}
     for k in (veri.get("birimler") or []) if isinstance(veri, dict) else []:
         if not isinstance(k, dict) or str(k.get("id") or "") not in gecerli:
             continue
         i = str(k["id"])
-        sec, param = G.param_temizle([str(c) for c in (k.get("sec") or []) if str(c) in gecerli[i]],
-                                     k.get("param"), segmentler)
-        g = {}
-        for a in ("g1", "g2", "g3"):
-            t = str(k.get(a) or "").strip()[:300]
-            g[a] = "" if _ilke_kopyasi(t) else t
-        ger = _gerekce_birlestir(g["g1"], g["g2"], g["g3"]) or str(k.get("gerekce") or "").strip()[:300]
-        sonuc[i] = {"sec": sec, "param": param, "gerekce": ger, "g1": g["g1"], "g2": g["g2"],
-                    "g3": g["g3"], "secilmeyen": str(k.get("secilmeyen") or "").strip()[:300]}
+        dm = {}
+        for r in k.get("kararlar") if isinstance(k.get("kararlar"), list) else []:
+            if not isinstance(r, dict):
+                continue
+            c = str(r.get("kod") or "").strip()
+            karar = str(r.get("karar") or "").strip().lower().replace("ü", "u").replace("i̇", "i")
+            if c not in gecerli[i] or c in dm or karar not in ("uret", "uretme"):
+                continue
+            anlam, s1 = G.dm_metin_temiz(str(r.get("anlam") or "")[:300])
+            son, s2 = G.dm_metin_temiz(str(r.get("sonuc") or "")[:300])
+            dm[c] = {"karar": karar, "anlam": anlam, "sonuc": son, "sayi": bool(s1 or s2)}
+        istenen = [c for c in gecerli[i] if (dm.get(c) or {}).get("karar") == "uret"]
+        # Segment kolonu verilmediyse kodun olcumde kullandigi segment gecerlidir.
+        pr = dict(param_on[i])
+        pr.update({c: v for c, v in (k.get("param") if isinstance(k.get("param"), dict) else {}).items()
+                   if isinstance(v, dict)})
+        sec, param = G.param_temizle(istenen, pr, segmentler)
+        # Parametresi gecersiz oldugu icin dusen donusum: karar "uretme" olur.
+        for c in istenen:
+            if c not in sec:
+                dm[c] = dict(dm[c], karar="uretme", dustu=True)
+        sonuc[i] = {"sec": sec, "param": param, "dm": dm, "gerekce": "", "g1": "", "g2": "", "g3": "",
+                    "secilmeyen": ""}
     return sonuc
 
 

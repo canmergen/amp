@@ -6533,3 +6533,27 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
     font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
 .pf-ayar-ad { font-weight: 600; }
 .pf-ayar-metin { color: var(--metin-soluk); flex: 1 1 260px; }
+
+/* 02.2 KODUN ÖLÇÜMÜ: iki model türü alt alta (ad, artış, şans ihtimali,
+   düzey). Yeşil: belirgin artış; sarı: şans payı içinde ya da çok küçük;
+   gri: artış yok ya da ölçülmez. Sayıları kod hesaplar. */
+.gl-th-ust { display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.gl-olc { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.gl-olc-sat { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 0 8px;
+    padding: 4px 8px; border-radius: 6px; border-left: 3px solid var(--kenar); text-align: left;
+    background: color-mix(in srgb, var(--metin-tamam) 5%, var(--yuzey)); font-variant-numeric: tabular-nums; }
+.gl-olc-ad { flex: 0 0 64px; font-weight: var(--fw-kalin); text-align: left; }
+.gl-olc-artis { font-weight: var(--fw-kalin); }
+.gl-olc-sans, .gl-olc-yok { font-size: var(--fs-ustbar); color: var(--metin-tamam); }
+.gl-olc-duzey { flex: 0 0 100%; padding-left: 72px; font-size: var(--fs-ustbar); color: var(--metin-tamam); text-align: left; }
+.gl-olc-sat.gl-olc-belirgin { border-left-color: var(--yesil); background: color-mix(in srgb, var(--yesil) 8%, var(--yuzey)); }
+.gl-olc-sat.gl-olc-belirgin .gl-olc-duzey, .gl-olc-sat.gl-olc-belirgin .gl-olc-artis { color: var(--yesil); font-weight: var(--fw-kalin); }
+.gl-olc-sat.gl-olc-sans, .gl-olc-sat.gl-olc-kucuk { border-left-color: var(--amber); background: color-mix(in srgb, var(--amber) 7%, var(--yuzey)); }
+.gl-olc-sat.gl-olc-sans .gl-olc-duzey, .gl-olc-sat.gl-olc-kucuk .gl-olc-duzey { color: var(--amber); }
+.gl-olc .gl-ad-olcum-alt { text-align: center; margin-top: 2px; }
+.gl-dm-ortuk { color: var(--metin-tamam); font-style: italic; }
+.gl-dm-sayi { color: var(--amber); }
+.dg-tablo.gl-ad-birim { min-width: 1080px; }
+.dg-tablo.gl-ad-birim td.gl-ad-olcum { min-width: 210px; }
+.gl-ad-birim tr.pf-kay-farkli > td:first-child { box-shadow: inset 4px 0 0 var(--amber); }
+.dg-tablo.gl-ad-birim td.gl-ad-olcum .gl-olc-sat { justify-content: flex-start; }

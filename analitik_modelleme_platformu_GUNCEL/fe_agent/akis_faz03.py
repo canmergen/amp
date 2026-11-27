@@ -237,7 +237,9 @@ def _kolonlari_ayir(katki):
 def geleneksel_kolonlar(durum, istek=None):
     """Ekranin istedigi kolon olcumleri. istek: {birim id: [kod, ...]}; bos
     ise onerilen ve secili butun (birim, kod) ciftleri. Doner: {birim id:
-    {kod: [[ad, iv, artis, iliski, uyum, degerli(0 ya da 1)], ...]}}."""
+    {kod: [[ad, iv, artis, iliski, uyum, degerli(0 ya da 1), ek], ...]}};
+    ek: {"dp", "dc", "di", "ag", "ap", "ai", "bos", "sn", "d" (dogrusalda
+    degerli), "a" (agac artiginda degerli)}."""
     from fe_agent import geleneksel as G
     g = durum.get("geleneksel") or {}
     veri = kolonlari_oku(durum)
@@ -254,8 +256,12 @@ def geleneksel_kolonlar(durum, istek=None):
         for c in kodlar if isinstance(kodlar, (list, tuple)) else []:
             satirlar = kb.get(str(c))
             if satirlar:
-                cikti.setdefault(str(bid), {})[str(c)] = [list(r)[:5] + [1 if G.kolon_degerli(r) else 0]
-                                                         for r in satirlar]
+                # 7. alan: modeldeki olcum (dogrusal ve agac artisi, sans ihtimali, bos orani)
+                cikti.setdefault(str(bid), {})[str(c)] = [
+                    list(r)[:5] + [1 if G.kolon_degerli(r) else 0,
+                                   dict(G._ek(r) or {}, d=1 if G.kolon_dogrusal(r) else 0,
+                                        a=1 if G.kolon_agac(r) else 0)]
+                    for r in satirlar]
     return cikti
 
 
@@ -424,11 +430,17 @@ def geleneksel_karti(durum, kilitli=False):
                       "aciklama": b.get("aciklama") or "", "ozet": G.ozet_metni(b),
                       "tekil": (b.get("ozet") or {}).get("tekil"),
                       "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {},
+                      # KODUN KARARI, her donusum icin: {kod: {k, n, d, a}} (kod hesaplar)
+                      "kod_karar": G.kod_kararlari(b, (g.get("katki") or {}).get(b["id"]), "hepsi"),
                       "katki": {k: v for k, v in ((g.get("katki") or {}).get(b["id"]) or {}).items()
                                 if k not in ("imza", "surum")} or None}
                      for b in birimler],
         "katki_esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI, "dilim": G.KATKI_DILIM,
-                       "uyum": G.UYUM_ARTIS},
+                       "uyum": G.UYUM_ARTIS, "abl": G.ABL_ARTIS,
+                       "sinir": next((k_.get("sinir") for k_ in (g.get("katki") or {}).values()
+                                      if isinstance(k_, dict) and k_.get("sinir")), G.TESADUF),
+                       "agac_var": G.agac_var()},
+        "duzey_adi": G.DUZEY_ADI, "agac_yok_adi": G.AGAC_YOK_ADI,
         "uyum_kodlari": list(G.UYUM_KODLARI), "olcek_notu": G.OLCEK_NOTU,
         "oneri": {i: _oneri_goster(o, (g.get("katki") or {}).get(i)) for i, o in oneri.items()},
         "karar": karar,
@@ -666,7 +678,19 @@ def _veri_al(durum):
         df, _y = _uretim_kaynagi(d)
         tr, _te = maskeler(d, df)
         return df, pd.Series(tr, index=df.index), (d.get("meta") or {}).get("target")
+    al.sinir = _tesaduf_siniri(durum)
     return al
+
+
+def _tesaduf_siniri(durum):
+    """02.1.1'deki Tesadüf Olasılığı: 02.2 olcumunde artisin sans eseri
+    sayilmamasi icin ust sinir. Okunamazsa None (kodun varsayilani)."""
+    try:
+        from fe_agent import akis_faz02
+        v = float((akis_faz02.profil_esikleri(durum) or {}).get("tesaduf"))
+        return v if 0 < v < 1 else None
+    except Exception:           # pylint: disable=broad-except
+        return None
 
 
 def _oneri_baslat(g, birimler, segmentler, model_turu, onceki, veri_al=None):
@@ -677,10 +701,11 @@ def _oneri_baslat(g, birimler, segmentler, model_turu, onceki, veri_al=None):
     cikti, sor = G.oneri_onbellek(birimler, onceki, model_turu, katki)
     arasi_imza = G.arasi_imzasi(birimler, model_turu)
     arasi_sor = g.get("arasi_imza") != arasi_imza
-    eksik = G.katki_eksik(birimler, katki, model_turu) if veri_al else []
+    sinir = getattr(veri_al, "sinir", None)
+    eksik = G.katki_eksik(birimler, katki, model_turu, sinir) if veri_al else []
     g.pop("oneri_is", None)
     if sor or arasi_sor or eksik:
-        kimlik = G.oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor, veri_al, katki)
+        kimlik = G.oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor, veri_al, katki, sinir)
         g["oneri_is"] = {"kimlik": kimlik, "model_turu": model_turu, "arasi_imza": arasi_imza,
                          "arasi_sor": arasi_sor, "baslangic": time.time(), "toplam": len(sor)}
     return G.oneri_birlestir(birimler, cikti, {}, model_turu, [], katki)
@@ -712,7 +737,10 @@ def geleneksel_is_durumu(durum):
         yeni_kolonlar = _kolonlari_ayir(d["katki"])     # durumda yalniz ozet kalir
         g["katki"] = d["katki"]
     katki = g.get("katki") or {}
-    cikti = {k: G.olcum_ekle(G.tekrar_ele(o, b, katki.get(k), model_turu)[0], b, katki.get(k), model_turu)
+    # Dil modelinin her donusum icin ayri karar verdigi onerilere ("dm") kod
+    # dokunmaz; eski bicimdeki kayitlarda ayni bilgiyi verenler ayiklanir.
+    cikti = {k: G.olcum_ekle(o if o.get("dm") is not None else G.tekrar_ele(o, b, katki.get(k), model_turu)[0],
+                             b, katki.get(k), model_turu)
              for b in birimler for k, o in [(b["id"], (g.get("oneri") or {}).get(b["id"]))]
              if o and o.get("kaynak") in ("dil modeli", "secenek yok", "sohbet")}
     oneri = G.oneri_birlestir(birimler, cikti, d.get("sonuc") or {}, model_turu, d.get("sorulan") or [],
@@ -723,7 +751,11 @@ def geleneksel_is_durumu(durum):
         yeni = G.arasi_ekle(birimler, d["arasi"], segmentler, "dil modeli")
         for b in yeni:
             mm = set(G.model_mumkun(b, model_turu))
-            oneri[b["id"]] = G.olcum_ekle({"sec": [c for c in b.get("oneri_islem") or [] if c in mm],
+            sec_ = [c for c in b.get("oneri_islem") or [] if c in mm]
+            ger_, sayi_ = G.dm_metin_temiz(b.get("gerekce") or "")
+            oneri[b["id"]] = G.olcum_ekle({"sec": sec_,
+                                           "dm": {c: {"karar": "uret", "anlam": ger_, "sonuc": "", "sayi": sayi_}
+                                                  for c in sec_},
                                            "param": {}, "gerekce": b.get("gerekce") or "",
                                            "g3": b.get("gerekce") or "", "secilmeyen": "",
                                            "kaynak": "dil modeli", "imza": G._oneri_imza(b, model_turu)},
