@@ -6503,3 +6503,5 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .gl-ad-kim-kap > .pf-kay { justify-self: stretch; text-align: center; min-width: 0; }
 .gl-ad-kim-siz { border: 1px solid var(--amber); color: var(--amber); background: var(--yuzey); }
 .gl-ad-kim-yazi { white-space: nowrap; }
+/* 02.2 özet adımındaki sayı karoları yalnız bilgidir (eski düzenin kısayolları kaldırıldı). */
+.gl-ozet-kap .pf-karo { pointer-events: none; cursor: default; }

@@ -2810,6 +2810,12 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2: «Uzman görünümü» kaldırıldı**
+
+- Eski düzen (Birimler / Üretim Planı / Üretime Girmeyen / Dönüşümler sekmeleri, süzgeç çubuğu, birim listesi) artık kartta gösterilmez; düğümleri karttan çıkarılır ve listesi çizilmez (`izgara.isConnected` değilse `listeCiz` çalışmaz). Kodu durur: birim kutusu (`birimSatiri`) «Ayrıntı»da kullanılır.
+- Karşılıkları: birim birim seçim adım tablolarında; kolon kolon seçim ve değer girişi «Ayrıntı»da; üretime girmeyen kolonlar baştaki kolon grafiğinde; dönüşümlerin açıklaması açılan dönüşüm satırında; «Hepsini Önerilere Döndür» özet adımında.
+- **Karşılığı olmayan:** Üretim Planı'nın tek tabloda üretilecek BÜTÜN kolonların listesi (kolon kolon, ölçümüyle) ve süzgeç çubuğundaki «öneren» / «durum» süzgeçleri. Özet adımındaki sayı karoları artık yalnız bilgidir (kısayol değil).
+
 **02.2: ölçüme göre ayıklama ve «Örnek Satırlar»**
 
 - **Ölçüme göre ayıklama (`geleneksel.olcum_ayikla`).** Dil modelinin seçtiği bir dönüşümde kodun ölçümü yeni bilgi göstermiyorsa (IV artışı belirgin değil ya da kaynakla aynı sıra, doğrusal uyum da belirgin değil, ürettiği kolonlardan hiçbiri değerli değil) dönüşüm öneriden çıkarılır; birim satırında «Üretme» gelir ve gerekçe sütununda «Kod ayıkladı: Ölçüm yeni bilgi göstermedi: IV …, kaynağa göre …, kaynakla ilişki …» yazar. Ölçülmeyen dönüşüme (eşik, iş kuralı aralıkları) dokunulmaz. Kullanıcı «Üret» ile yeniden ekleyebilir (sapma olarak saklanır). Hem yeni yanıtlarda (`oneri_birlestir`) hem kayıtlı önerilerde (`oneri_onbellek`; dil modeline yeniden sorulmadan) uygulanır. Bedeli: dil modelinin anlamca işe yarar dediği ama ölçümde görünmeyen dönüşüm öneride gelmez.

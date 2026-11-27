@@ -19580,13 +19580,9 @@ function gelenekselKartiEkle(alan, blok) {
         + "dönüşümün açıklaması ve uygulandığı birimler gelir; her birimde kodun ölçümü, gerekçe ve Üret / Üretme "
         + "seçimi durur. «Ayrıntı» birimin bütün dönüşümlerini, kolon kolon seçimi ve değer girişini açar. Seçilmeyen "
         + "ve bu veride uygulanamayan dönüşümler ayrı kesimlerdedir, nedenleriyle. Adımlar arasında serbestçe "
-        + "gezilir; kararlar dördüncü adımda bir kez onaylanır. Birim birim liste, süzgeçler, Üretim Planı ve "
-        + "dönüşüm kataloğu dördüncü adımdaki «Uzman görünümü» altındadır; aşağıdaki açıklama o görünüm içindir.\n\n"
-        + "Birimler sekmesinde her birim için hangi geleneksel dönüşümlerin uygulanacağı ve nedeni yazar. Birim: aynı "
-        + "ölçünün farklı pencereleri (pencere ailesi), tek kolon, anlamlı kolon çifti (gelen ve giden, "
-        + "tutar ve adet, alt kırılım ve toplam) ya da satır düzeyi. Üstteki süzgeçlerle birim tipine, "
-        + "üretilip üretilmeyeceğine ve dönüşüme göre daraltılır; Üretim Planı sekmesi hangi birimde hangi "
-        + "dönüşümün üretileceğini tek tabloda gösterir.\n\n"
+        + "gezilir; kararlar dördüncü adımda bir kez onaylanır.\n\n"
+        + "Birim: tek kolon, aynı ölçünün farklı pencereleri (pencere ailesi), anlamlı kolon çifti (gelen ve giden, "
+        + "tutar ve adet, alt kırılım ve toplam), kolon grubu ya da satır düzeyi.\n\n"
         + "Hangi dönüşümün birimde uygulanabildiğine kod karar verir (tip, negatif değer, pencere sayısı, "
         + "hedef türü). Uygulanabilenlerden hangilerinin seçileceğine dil modeli aşama aşama karar verir: "
         + "1. aşama kolonun kendi dönüşümü, 2. aşama ailenin pencereleri arası, 3. aşama aileler arası "
@@ -21156,21 +21152,16 @@ function gelenekselKartiEkle(alan, blok) {
     adimNav.append(navGeri, navIleri);
     adimKap.append(adimSerit, adimBilgi, adimArac, adimGovde, adimNav);
     kart.insertBefore(adimKap, karolar);
-    /* Dördüncü adım: sayılar, adım adım özet, uzman görünümü (eski düzen). */
+    /* Dördüncü adım: sayılar ve adım adım özet. */
     const ozetKap = elYap("div", "gl-ozet-kap");
     const ozetTablo = elYap("div", "gl-ozet-tablo");
-    const uzman = document.createElement("details");
-    uzman.className = "gl-uzman";
-    const uzmanBas = document.createElement("summary");
-    uzmanBas.append(elYap("b", "", "Uzman görünümü"),
-        elYap("span", "gl-not", " Birim birim liste, süzgeçler, üretilecek kolonların tam listesi (Üretim Planı), üretime girmeyen kolonlar ve dönüşüm kataloğu."));
-    uzman.appendChild(uzmanBas);
-    uzman.open = !!GL_ADIM.uzman;
-    uzman.addEventListener("toggle", () => { GL_ADIM.uzman = uzman.open; });
     kart.insertBefore(ozetKap, karolar);
-    uzman.append(mt, izgara);
-    ozetKap.append(karolar, ozetTablo, uzman);
-    karolar.addEventListener("click", () => { uzman.open = true; });
+    /* Eski düzen (sekmeler, süzgeç çubuğu, birim listesi, Üretim Planı,
+       katalog) KARTTA GÖSTERİLMEZ: düğümleri karttan çıkarılır. Kodu durur
+       (birim kutusu «Ayrıntı»da kullanılır) ama listesi çizilmez. */
+    mt.remove();
+    izgara.remove();
+    ozetKap.append(karolar, ozetTablo);
     /* Sohbet: her adımda erişilir, kapalı gelir. */
     const sohbetD = document.createElement("details");
     sohbetD.className = "gl-sohbet-ac";
@@ -21762,7 +21753,7 @@ function gelenekselKartiEkle(alan, blok) {
             + ftBinlik(eklD) + " dönüşüm eklendi" + (fk ? " (" + ftBinlik(fk) + " birimde öneriden farklı)." : ".");
         geriBtn.disabled = kart.classList.contains("kilitli");
         adimCiz();
-        listeCiz();
+        if (izgara.isConnected) listeCiz();
     }
     tumunuCiz();
     if (blok && blok._yer) { blok._yer.replaceWith(kart); return; }
