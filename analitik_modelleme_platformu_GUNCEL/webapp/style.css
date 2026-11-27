@@ -6487,3 +6487,14 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .gl-uzman[open] > summary, .gl-sohbet-ac[open] > summary { border-bottom: 1px solid var(--kenar); }
 .gl-uzman > :not(summary), .gl-sohbet-ac > :not(summary) { margin: var(--b-3); }
 @media (max-width: 900px) { .pf-asamalar.gl-adim-serit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 02.2 «Örnek Satırlar»: kaynak ve üretilen değerler yan yana. */
+.gl-ad-ornek-btn { display: block; margin: 4px auto 0; }
+.gl-ornek { display: flex; flex-direction: column; gap: var(--b-2); }
+.gl-ornek-bas { color: var(--metin-tamam); line-height: 1.4; text-align: center; }
+.dg-tablo.gl-ornek-tablo { width: 100%; font-variant-numeric: tabular-nums; }
+.gl-ornek-tablo th.gl-ornek-uretilen, .gl-ornek-tablo td.gl-ornek-uretilen { background: color-mix(in srgb, var(--yesil) 9%, var(--yuzey)); font-weight: var(--fw-kalin); }
+.gl-ornek-tablo td.gl-ornek-bos { color: var(--metin-tamam); font-style: italic; }
+.gl-ornek-formul { line-height: 1.45; text-align: center; overflow-wrap: anywhere; }
+.gl-ornek-kod { display: block; margin-top: 2px; padding: 4px 8px; border-radius: var(--r-kucuk); background: var(--yuzey); border: 1px solid var(--kenar);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--fs-ustbar); text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gl-ornek .pf-ic-kap.gl-ornek-sar { max-height: none; overflow-x: auto; overflow-y: visible; }

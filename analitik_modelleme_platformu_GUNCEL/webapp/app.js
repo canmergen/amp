@@ -19334,7 +19334,7 @@ const GL_ACIK = new Set();
 /* 02.2 adım adım düzenin görünüm durumu (kart yeniden çizilince korunur):
    açık adım, açık dönüşümler, "bütün birimler" görünümü açık dönüşümler,
    ayrıntısı açık (birim|dönüşüm) çiftleri, sayfa sınırları, arama. */
-const GL_ADIM = { no: 1, acik: new Set(), tum: new Set(), ayrinti: new Set(), sayfa: {}, ara: "", uzman: false, sohbet: false, degerGerek: "" };
+const GL_ADIM = { no: 1, acik: new Set(), tum: new Set(), ayrinti: new Set(), ornek: new Set(), sayfa: {}, ara: "", uzman: false, sohbet: false, degerGerek: "" };
 /* 02.2 bekleme kartı: dil modeli bütün birimlere karar verene (ve aileler
    arası ilişkileri önerene) kadar kararlar gösterilmez; ilerleme gösterilir,
    iş bitince kart kararlarla açılır. */
@@ -21200,7 +21200,13 @@ function gelenekselKartiEkle(alan, blok) {
            (o.g_tutmuyor) sunucu gerekçeyi göndermez; yerine bu not yazar. */
         const tutmuyor = onerili && !kodEk && (o.g_tutmuyor || []).includes(Number(a));
         if (tutmuyor) ger = "Dil modelinin gerekçesi gösterilmiyor: yazdığı sayılar kodun bu birim için ölçtükleriyle tutmuyor. Seçim dil modelinindir; kodun ölçümü yandaki sütundadır.";
-        else if (onerili) ger = kodEk ? (kodEk.neden || "") : ((o.sayisiz ? "" : (o["g" + a] || "")) || (m ? "" : o.gerekce || ""));
+        else if (onerili) {
+            ger = kodEk ? (kodEk.neden || "") : ((o.sayisiz ? "" : (o["g" + a] || "")) || (m ? "" : o.gerekce || ""));
+            /* Gerekçe boş kalmasın: kodun önerisinde kodun kendi cümlesi; dil
+               modeli sayısız genel cümle yazdıysa bunu söyleyen not. */
+            if (!ger && !dm) ger = (o.dm_yok ? "Dil modelinden karar alınamadı; kod ölçüme göre önerdi. " : "Kod ölçüme göre önerdi. ") + (o.gerekce || "");
+            if (!ger && dm && o.sayisiz) ger = "Dil modelinin gerekçesi gösterilmiyor: sayı içermeyen genel bir cümle yazdı. Kodun ölçümü yandaki sütundadır.";
+        }
         else if (elenen) ger = "Kod ayıkladı: " + (elenen.neden || "ölçüm yeni bilgi göstermedi.");
         else if (secili) ger = "Siz eklediniz; öneride yoktu.";
         else ger = o.dm_yok ? "Dil modelinden karar alınamadı; kod da önermedi." : dm ? "Dil modeli bu birimde seçmedi." : "Kod bu birimde önermedi.";
@@ -21237,6 +21243,59 @@ function gelenekselKartiEkle(alan, blok) {
         });
         return { k, c, uyg, sec, one, cik, ekl, kol, kim, secB };
     });
+    /* «Örnek Satırlar»: bir birimde bir dönüşümün kodun ürettiği değerleri,
+       kaynak kolonlarla yan yana, Train'den birkaç satırda (sunucu:
+       /geleneksel_ornek; üretimde kullanılan aynı fonksiyonla hesaplanır).
+       Hesap gözle doğrulansın diye. Sonuç kart açıkken saklanır. */
+    const ORNEK = {};
+    const ornekIste = (b, c) => {
+        const a_ = b.id + "|" + c;
+        if (ORNEK[a_]) return;
+        ORNEK[a_] = { bekliyor: true };
+        fetch(getWebAppBackendUrl("geleneksel_ornek"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, id: b.id, kod: c, param: (karar[b.id].param || {})[c] || null })
+        }).then(r => r.json()).then(j => {
+            ORNEK[a_] = (j && j.tamam === true && j.ornek) ? j.ornek : { hata: (j && j.hata) || "Örnek satırlar alınamadı." };
+            adimCiz();
+        }).catch(() => { ORNEK[a_] = { hata: "Sunucuya ulaşılamadı; örnek satırlar alınamadı." }; adimCiz(); });
+    };
+    const ornekKutusu = (b, c) => {
+        const v = ORNEK[b.id + "|" + c] || { bekliyor: true };
+        const kutu = elYap("div", "gl-ornek");
+        if (v.bekliyor) { kutu.appendChild(elYap("div", "gl-not", "Örnek satırlar hesaplanıyor…")); return kutu; }
+        if (v.hata) { kutu.appendChild(elYap("div", "gl-uyari", v.hata)); return kutu; }
+        const ur = v.uretilen || [], ka = v.kaynak || [];
+        kutu.appendChild(elYap("div", "gl-ornek-bas", "Train'den " + ftBinlik((v.satirlar || []).length) + " satır: kaynak kolonların değeri ve kodun ürettiği değer. "
+            + "Satırlar üretilen ilk kolonun en küçüğünden en büyüğüne seçilir; değerler veri setinizden okunur."
+            + (Number(v.toplam_uretilen) > ur.length ? " Bu dönüşüm bu birimde " + ftBinlik(v.toplam_uretilen) + " kolon üretir; ilk " + ftBinlik(ur.length) + " tanesi gösterilir." : "")));
+        const sar = elYap("div", "pf-ic-kap gl-ornek-sar");
+        const t = elYap("table", "dg-tablo gl-ornek-tablo");
+        const th = elYap("thead"), hr = elYap("tr");
+        if (v.kimlik) hr.appendChild(elYap("th", "", v.kimlik));
+        ka.forEach(k_ => { const h_ = elYap("th", "gl-ornek-kaynak", ""); h_.append(elYap("div", "", k_), elYap("div", "pf-th-alt", "kaynak")); hr.appendChild(h_); });
+        ur.forEach(u => { const h_ = elYap("th", "gl-ornek-uretilen", ""); h_.append(elYap("div", "", u), elYap("div", "pf-th-alt", "üretilen")); hr.appendChild(h_); });
+        th.appendChild(hr); t.appendChild(th);
+        const tb = elYap("tbody");
+        const yaz = x => x === null || x === undefined ? "boş" : typeof x === "number" ? String(x).replace(".", ",") : String(x);
+        (v.satirlar || []).forEach(r => {
+            const tr_ = elYap("tr");
+            r.forEach((x, i) => tr_.appendChild(elYap("td", (i >= r.length - ur.length ? "gl-ornek-uretilen" : "") + (x === null || x === undefined ? " gl-ornek-bos" : ""), yaz(x))));
+            tb.appendChild(tr_);
+        });
+        t.appendChild(tb);
+        sar.appendChild(t);
+        kutu.appendChild(sar);
+        ur.forEach(u => {
+            const f = elYap("div", "gl-ornek-formul");
+            f.appendChild(elYap("b", "", u + ": "));
+            f.appendChild(elYap("span", "", (v.aciklama || {})[u] || ""));
+            const ks = (v.kod_satiri || {})[u];
+            if (ks) { const kd = document.createElement("code"); kd.className = "gl-ornek-kod"; kd.textContent = ks; f.appendChild(kd); }
+            kutu.appendChild(f);
+        });
+        return kutu;
+    };
     const adimEsler = (b, q) => !q || (b.ad + " " + (b.kolonlar || []).join(" ") + " " + (b.aciklama || "")).toLocaleLowerCase("tr").includes(q);
     const BIRIM_SAYFA = 50;
 
@@ -21523,8 +21582,26 @@ function gelenekselKartiEkle(alan, blok) {
                 adimCiz();
             };
             t5.appendChild(ay);
+            const orn = elYap("button", "dg-toplu-btn gl-ad-ornek-btn", GL_ADIM.ornek.has(ayKey) ? "Örnekleri Kapat" : "Örnek Satırlar");
+            orn.type = "button";
+            orn.title = "Train'den birkaç satırda kaynak değerleri ve kodun ürettiği değeri yan yana gösterir; hesabı gözle doğrulayabilirsiniz.";
+            orn.onclick = () => {
+                if (GL_ADIM.ornek.has(ayKey)) GL_ADIM.ornek.delete(ayKey);
+                else { GL_ADIM.ornek.add(ayKey); ornekIste(b, c); }
+                adimCiz();
+            };
+            t5.appendChild(orn);
             r.append(t1, t2, t3, t4, t5);
             bb.appendChild(r);
+            if (GL_ADIM.ornek.has(ayKey)) {
+                ornekIste(b, c);
+                const or_ = elYap("tr", "gl-ad-birim-ayrinti gl-ad-ornek-satir");
+                const otd = elYap("td");
+                otd.colSpan = 5;
+                otd.appendChild(ornekKutusu(b, c));
+                or_.appendChild(otd);
+                bb.appendChild(or_);
+            }
             if (GL_ADIM.ayrinti.has(ayKey)) {
                 const ar = elYap("tr", "gl-ad-birim-ayrinti");
                 const atd = elYap("td");

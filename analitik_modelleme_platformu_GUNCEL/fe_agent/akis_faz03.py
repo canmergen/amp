@@ -259,6 +259,77 @@ def geleneksel_kolonlar(durum, istek=None):
     return cikti
 
 
+def geleneksel_ornek(durum, birim_id, kod, param=None, adet=8):
+    """02.2 «Örnek Satırlar»: bir birimde bir donusumun KODUN URETTIGI
+    degerleri, kaynak kolonlarin degerleriyle yan yana, Train'den birkac
+    satirda. Kullanici hesabi gozle dogrulasin diye. Donusum uretimde
+    kullanilan ayni fonksiyonla (geleneksel.uygula) tablonun tamaminda
+    hesaplanir, ogrenilen her sey yalniz Train satirlarindan ogrenilir;
+    satirlar uretilen ilk kolonun en kucugunden en buyugune yayilacak
+    sekilde secilir (bos uretilen bir satir varsa o da). Hicbir sey
+    kaydedilmez. Doner: {"kimlik", "kaynak": [kolon], "uretilen": [kolon],
+    "satirlar": [[deger, ...]], "aciklama": {kolon: metin}, "kod_satiri":
+    {kolon: metin}, "toplam_uretilen", "train_satir"} ya da {"hata"}."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    b = next((x for x in g.get("birimler") or [] if x.get("id") == birim_id), None)
+    if b is None or kod not in (b.get("mumkun") or []) or kod not in G.KATALOG_HARITA:
+        return {"hata": "Bu birimde bu dönüşüm uygulanamıyor."}
+    df, _yd = _uretim_kaynagi(durum)
+    tr, _te = maskeler(durum, df)
+    tr = pd.Series(tr, index=df.index).fillna(False).astype(bool)
+    m = durum.get("meta") or {}
+    k = (g.get("karar") or {}).get(birim_id) or {}
+    p = param if isinstance(param, dict) and param else \
+        (k.get("param") or {}).get(kod) or (((g.get("oneri") or {}).get(birim_id) or {}).get("param") or {}).get(kod) or {}
+    yeni, kayit, hatalar = G.uygula(df, [b], {birim_id: {"sec": [kod], "param": {kod: p} if p else {}, "haric": {}}},
+                                    tr, m.get("target"))
+    if not yeni:
+        return {"hata": (hatalar[0] if hatalar else
+                         "Bu dönüşüm bu birimde kolon üretmedi. Değer isteyen dönüşümde (eşik, aralık, segment) "
+                         "önce değeri girin.")}
+    uretilen = list(yeni)[:4]
+    kay = {r["ad"]: r for r in kayit}
+    kaynak = []
+    for u in uretilen:
+        for c in (kay.get(u) or {}).get("kaynaklar") or []:
+            if c in df.columns and c not in kaynak:
+                kaynak.append(c)
+    kaynak = kaynak[:6]
+    s = yeni[uretilen[0]][tr]
+    dolu = s.dropna().sort_values(kind="mergesort")
+    sira = []
+    if len(dolu):
+        for q in (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0):
+            i = dolu.index[int(round(q * (len(dolu) - 1)))]
+            if i not in sira:
+                sira.append(i)
+    for i in s[s.isna()].index[:1]:
+        sira.append(i)
+    sira = sira[:max(1, int(adet))]
+
+    def yaz(v):
+        if v is None or (isinstance(v, float) and v != v) or v is pd.NaT:
+            return None
+        try:
+            if pd.isna(v):
+                return None
+        except (TypeError, ValueError):
+            pass
+        if isinstance(v, (int, np.integer)) and not isinstance(v, bool):
+            return int(v)
+        if isinstance(v, (float, np.floating)):
+            return float("%.6g" % float(v))
+        return str(v)
+    kimlik = m.get("id") if m.get("id") in df.columns else None
+    satirlar = [([yaz(df.at[i, kimlik])] if kimlik else [])
+                + [yaz(df.at[i, c]) for c in kaynak] + [yaz(yeni[u].at[i]) for u in uretilen] for i in sira]
+    return {"kimlik": kimlik, "kaynak": kaynak, "uretilen": uretilen, "satirlar": satirlar,
+            "aciklama": {u: (kay.get(u) or {}).get("aciklama") or "" for u in uretilen},
+            "kod_satiri": {u: (kay.get(u) or {}).get("kod_satiri") or "" for u in uretilen},
+            "toplam_uretilen": len(yeni), "train_satir": int(tr.sum()), "hatalar": hatalar[:3]}
+
+
 def _oneri_goster(o, k):
     """Onerinin karta giden hali. Dil modelinin asama gerekcesindeki sayilar
     kodun o birim icin olctugu sayilarla tutmuyorsa (baska birimin cumlesi,

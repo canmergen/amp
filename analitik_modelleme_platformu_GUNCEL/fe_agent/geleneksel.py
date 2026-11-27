@@ -2111,6 +2111,40 @@ def tekrar_ele(o, b, k, model_turu):
     return o, elenen
 
 
+def olcum_ayikla(o, b, k, model_turu):
+    """Dil modelinin sectigi ama kodun OLCUMU YENI BILGI GOSTERMEYEN
+    donusumleri oneriden cikarir ("elenen" listesine nedeniyle yazar).
+    Yeni bilgi: katki_degerli (IV artisi belirgin ve kaynakla ayni sira
+    degil, ya da dogrusal uyum belirgin) ya da donusumun urettigi
+    kolonlardan en az biri degerli. OLCULMEYEN donusume (esik, is kurali
+    araliklari gibi; olcum yok) dokunulmaz: hakkinda sayi yoktur.
+    Kullanici cikarilan donusumu kartta yeniden ekleyebilir (sapma olarak
+    saklanir, sonraki onerilerde de uygulanir). Doner: (yeni oneri, elenen
+    [{kod, neden}])."""
+    kod = (k or {}).get("kodlar") or {}
+    sec = list(o.get("sec") or [])
+    if not kod or not sec:
+        return o, []
+    yaz = lambda v: "-" if v is None else ("%.2f" % v).replace(".", ",")
+    cikan = []
+    for c in list(sec):
+        m = kod.get(c)
+        if m is None or katki_degerli(m) or (m.get("degerli") or 0) > 0:
+            continue
+        sec.remove(c)
+        cikan.append({"kod": c, "neden": (
+            "Ölçüm yeni bilgi göstermedi: IV %s, kaynağa göre %s, kaynakla ilişki %s%s. "
+            "Dil modeli seçmişti; isterseniz yeniden ekleyebilirsiniz." % (
+                _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")), yaz(m.get("iliski")),
+                (", doğrusal uyum %s" % _artis_yaz(m["uyum"])) if m.get("uyum") is not None else ""))})
+    if not cikan:
+        return o, []
+    o = dict(o, sec=sec, param={c: v for c, v in (o.get("param") or {}).items() if c in sec},
+             haric={c: v for c, v in (o.get("haric") or {}).items() if c in sec})
+    o["elenen"] = [e for e in (o.get("elenen") or []) if e.get("kod") not in {x["kod"] for x in cikan}] + cikan
+    return o, cikan
+
+
 def olcum_tamamla(o, b, k, model_turu):
     """Olcume gore yeni bilgi getiren (katki_degerli) ve secili bir donusumle
     ayni sirada olmayan kodlar secimde yoksa kod ekler; "kod_ekledi" ile
@@ -2237,7 +2271,11 @@ def oneri_onbellek(birimler, onceki=None, model_turu="agac", katki=None):
                      gerekce=k.get("gerekce") or SECENEK_YOK)
             cikti[b["id"]] = olcum_ekle(o, b, kk, model_turu)
         elif o.get("kaynak") in ("dil modeli", "sohbet") and o.get("imza") == _oneri_imza(b, model_turu):
-            cikti[b["id"]] = o
+            # Kayitli oneri: olcumu yeni bilgi gostermeyen secimler burada da
+            # ayiklanir (kural sonradan geldi; dil modeline yeniden sorulmaz).
+            kk = (katki or {}).get(b["id"])
+            o2, cikan = olcum_ayikla(o, b, kk, model_turu)
+            cikti[b["id"]] = olcum_ekle(o2, b, kk, model_turu) if cikan else o
         else:
             sor.append(b)
     return cikti, sor
@@ -2258,6 +2296,7 @@ def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None, katki=Non
         kk = (katki or {}).get(b["id"])
         if o is not None:
             o, _el = tekrar_ele(dict(o), b, kk, model_turu)
+            o, _ay = olcum_ayikla(o, b, kk, model_turu)
             o = olcum_tamamla(o, b, kk, model_turu)
             cikti[b["id"]] = olcum_ekle(dict(o, kaynak="dil modeli", imza=_oneri_imza(b, model_turu)),
                                         b, kk, model_turu)

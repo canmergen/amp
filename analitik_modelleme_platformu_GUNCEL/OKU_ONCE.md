@@ -2810,6 +2810,12 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2: ölçüme göre ayıklama ve «Örnek Satırlar»**
+
+- **Ölçüme göre ayıklama (`geleneksel.olcum_ayikla`).** Dil modelinin seçtiği bir dönüşümde kodun ölçümü yeni bilgi göstermiyorsa (IV artışı belirgin değil ya da kaynakla aynı sıra, doğrusal uyum da belirgin değil, ürettiği kolonlardan hiçbiri değerli değil) dönüşüm öneriden çıkarılır; birim satırında «Üretme» gelir ve gerekçe sütununda «Kod ayıkladı: Ölçüm yeni bilgi göstermedi: IV …, kaynağa göre …, kaynakla ilişki …» yazar. Ölçülmeyen dönüşüme (eşik, iş kuralı aralıkları) dokunulmaz. Kullanıcı «Üret» ile yeniden ekleyebilir (sapma olarak saklanır). Hem yeni yanıtlarda (`oneri_birlestir`) hem kayıtlı önerilerde (`oneri_onbellek`; dil modeline yeniden sorulmadan) uygulanır. Bedeli: dil modelinin anlamca işe yarar dediği ama ölçümde görünmeyen dönüşüm öneride gelmez.
+- **«Örnek Satırlar».** Birim satırındaki düğme, o birimde o dönüşümün kodun ürettiği değerleri kaynak kolonların değerleriyle yan yana, Train'den en çok 8 satırda gösterir (`/geleneksel_ornek`, `akis_faz03.geleneksel_ornek`). Üretimde kullanılan aynı fonksiyonla (`geleneksel.uygula`) tablonun tamamında hesaplanır, öğrenilenler yalnız Train'den öğrenilir; satırlar üretilen ilk kolonun en küçüğünden en büyüğüne yayılır (boş üretilen bir satır varsa o da). Kimlik kolonu varsa ilk sütundadır; altında kolonun açıklaması ve üretim kodu satırı yazar. Hiçbir şey kaydedilmez. Not: her basışta 02.1 sonu tablo okunur; büyük tabloda birkaç saniye sürebilir.
+- Kodun önerdiği (dil modeli yanıt vermediği) birimde gerekçe sütunu artık boş kalmaz: «Dil modelinden karar alınamadı; kod ölçüme göre önerdi» ve kodun sayılı cümlesi yazar.
+
 **02.2: dil modelinin gerekçesi kodun ölçümüyle denetlenir**
 
 - Dil modeli hesap yapmaz: her birim için kodun ölçtüğü sayılar (kaynak IV, dönüşümlerin IV'si, artış, kaynakla ilişki, doğrusal uyum) kendisine verilir; yalnız kodun «uygulanabilir» dediği dönüşümlerden seçebilir (`mumkun`; yanıt ve onay bu listeyle süzülür) ve gerekçesini o sayılarla yazması istenir. Üretimi kod yapar (`geleneksel.uygula`), yalnız Train satırlarından öğrenerek.
